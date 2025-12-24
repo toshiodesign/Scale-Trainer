@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bass Trainer v12: Clean & Intervals</title>
+    <style>
+        /* --- CSS Variables --- */
+        :root {
+            --bg-body: #EAECEE;
+            --bg-app: #ffffff;
+            --text-main: #34495E;
+            --text-sub: #7f8c8d;
+            
+            --fret-line: #BDC3C7;
+            --nut-line: #2C3E50;
+            --string-line: #95a5a6;
+            --inlay: #2C3E50;
+            
+            --note-root: #E67E22;   /* Root: Orange */
+            --note-active: #2980B9; /* All other notes: Blue */
+            --note-ghost: #F0F3F4;
+            
+            --note-text-active: #ffffff;
+            --note-text-ghost: #bdc3c7;
+
+            --btn-bg: #ffffff;
+            --btn-border: #ddd;
+            --btn-active-bg: #2C3E50;
+            --btn-active-text: #ffffff;
+        }
+
+        body.night-mode {
+            --bg-body: #121212;
+            --bg-app: #1E1E1E;
+            --text-main: #E0E0E0;
+            --text-sub: #A0A0A0;
+            
+            --fret-line: #444444;
+            --nut-line: #888888;
+            --string-line: #555555;
+            --inlay: #000000;
+            
+            --note-root: #D35400;
+            --note-active: #3498DB;
+            --note-ghost: #2C2C2C;
+            
+            --note-text-active: #ffffff;
+            --note-text-ghost: #555555;
+
+            --btn-bg: #2C2C2C;
+            --btn-border: #444;
+            --btn-active-bg: #3498DB;
+            --btn-active-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            transition: background 0.3s;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1400px;
+            background: var(--bg-app);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        .header-section {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--fret-line);
+            background: var(--bg-app);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; color: var(--text-main); white-space: nowrap; }
+        
+        .switches-area { display: flex; gap: 10px; align-items: center; }
+
+        .controls-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        select {
+            padding: 8px;
+            font-size: 0.9rem;
+            border: 1px solid var(--btn-border);
+            border-radius: 6px;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            flex-grow: 1;
+            outline: none;
+        }
+
+        /* Toggles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-body);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            user-select: none;
+            border: 1px solid var(--btn-border);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 36px;
+            height: 18px;
+            background-color: #BDC3C7;
+            border-radius: 20px;
+            transition: background-color 0.3s;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        #nightModeCheck:checked + .toggle-switch { background-color: #555; }
+        #multiModeCheck:checked + .toggle-switch { background-color: var(--note-active); }
+        input[type="checkbox"]:checked + .toggle-switch::after { transform: translateX(18px); }
+
+        /* --- Buttons --- */
+        .pos-buttons-container {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 10px 15px;
+            background: var(--bg-app);
+            border-bottom: 1px solid var(--fret-line);
+            scrollbar-width: none;
+        }
+        .pos-buttons-container::-webkit-scrollbar { display: none; }
+
+        .pos-btn {
+            white-space: nowrap;
+            padding: 6px 12px;
+            border: 1px solid var(--btn-border);
+            background: var(--btn-bg);
+            color: var(--text-sub);
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.1;
+        }
+        .pos-btn span.mode-name { font-size: 0.7rem; opacity: 0.8; font-weight: normal; }
+        .pos-btn.active {
+            background: var(--btn-active-bg);
+            color: var(--btn-active-text);
+            border-color: var(--btn-active-bg);
+            font-weight: 600;
+        }
+
+        /* --- Fretboard --- */
+        .fretboard-container {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            background: var(--bg-app);
+            display: flex;
+            justify-content: center;
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 1600px;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 15px;
+            padding: 10px 15px;
+            font-size: 0.75rem;
+            background: var(--bg-body);
+            border-top: 1px solid var(--fret-line);
+            justify-content: center;
+            flex-wrap: wrap;
+            color: var(--text-sub);
+        }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        
+        .note-text { font-family: Arial, sans-serif; font-weight: bold; font-size: 11px; pointer-events: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header-section">
+            <div class="header-top">
+                <h1>Bass Trainer v12</h1>
+                <div class="switches-area">
+                    <label class="toggle-container">
+                        <input type="checkbox" id="nightModeCheck" onchange="toggleNightMode()">
+                        <div class="toggle-switch"></div>
+                        <span>Night</span>
+                    </label>
+                    <label class="toggle-container">
+                        <input type="checkbox" id="multiModeCheck" onchange="toggleMultiMode()">
+                        <div class="toggle-switch"></div>
+                        <span>Multi</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="controls-row">
+                <select id="keySelect" onchange="resetAndUpdate()">
+                    <option value="0">Key: C</option>
+                    <option value="1">Key: Db</option>
+                    <option value="2">Key: D</option>
+                    <option value="3">Key: Eb</option>
+                    <option value="4">Key: E</option>
+                    <option value="5">Key: F</option>
+                    <option value="6">Key: Gb</option>
+                    <option value="7">Key: G</option>
+                    <option value="8">Key: Ab</option>
+                    <option value="9">Key: A</option>
+                    <option value="10">Key: Bb</option>
+                    <option value="11">Key: B</option>
+                </select>
+
+                <select id="scaleSelect" onchange="resetAndUpdate()">
+                    <option value="major">Scale: Major (Ionian)</option>
+                    <option value="minor">Scale: Natural Minor</option>
+                    <option value="maj_pent">Scale: Major Pentatonic</option>
+                    <option value="min_pent">Scale: Minor Pentatonic</option>
+                </select>
+
+                <select id="viewModeSelect" onchange="updateApp()">
+                    <option value="notes">顯示: 音名 (Notes)</option>
+                    <option value="intervals">顯示: 級數 (Intervals)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="pos-buttons-container" id="posBtnContainer"></div>
+
+        <div class="fretboard-container">
+            <svg id="fretboard" viewBox="0 0 1650 240" preserveAspectRatio="xMidYMid meet">
+                </svg>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音 (Root)</div>
+            <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>音階內音 (Active)</div>
+            <div class="legend-item"><span class="dot" style="background:var(--note-ghost)"></span>背景 (Ghost)</div>
+        </div>
+    </div>
+
+<script>
+    const FRETS = 24;
+    const TUNING = [7, 2, 9, 4, 11]; // G, D, A, E, B
+    const STRINGS = 5;
+
+    const X_START = 50;
+    const Y_START = 30;
+    const FRET_WIDTH = 65;
+    const STRING_GAP = 40;
+
+    const SCALES = {
+        'major':    [0, 2, 4, 5, 7, 9, 11],
+        'minor':    [0, 2, 3, 5, 7, 8, 10],
+        'maj_pent': [0, 2, 4, 7, 9],
+        'min_pent': [0, 3, 5, 7, 10]
+    };
+
+    // Intervals Definition
+    const INTERVAL_NAMES = {
+        'major':    ['R', '2', '3', '4', '5', '6', '7'],
+        'minor':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
+        'maj_pent': ['R', '2', '3', '5', '6'],
+        'min_pent': ['R', 'b3', '4', '5', 'b7']
+    };
+
+    const SCALE_MODE_NAMES = {
+        'major': ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixo", "Aeolian", "Locrian"],
+        'minor': ["Aeolian", "Locrian", "Ionian", "Dorian", "Phrygian", "Lydian", "Mixo"],
+        'maj_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
+        'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"]
+    };
+
+    let currentRoot = 0;
+    let currentScaleType = 'major';
+    let currentViewMode = 'notes';
+    let activeAnchors = new Set([]); 
+    let generatedPositions = []; 
+    let isMultiMode = false;
+
+    // --- Core Logic ---
+
+    function getNoteValue(stringIdx, fret) {
+        return (TUNING[stringIdx] + fret) % 12;
+    }
+
+    function getNoteName(val) {
+        const names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        return names[val];
+    }
+
+    function getIntervalLabel(noteVal) {
+        const scaleIntervals = SCALES[currentScaleType];
+        const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+        const idx = scaleNotes.indexOf(noteVal);
+        if (idx !== -1) {
+            return INTERVAL_NAMES[currentScaleType][idx];
+        }
+        return "?";
+    }
+
+    // Strict 3NPS Generation Logic
+    function generateDynamicPositions(scaleNotes) {
+        let positions = [];
+        let bStringBase = TUNING[4];
+        let modeNames = SCALE_MODE_NAMES[currentScaleType];
+
+        // Scan B string 0-22
+        for (let f = 0; f <= 22; f++) {
+            let noteVal = (bStringBase + f) % 12;
+            let scaleIndex = scaleNotes.indexOf(noteVal);
+            
+            if (scaleIndex !== -1) {
+                let modeName = modeNames[scaleIndex % modeNames.length];
+                positions.push({
+                    anchorFret: f,
+                    noteVal: noteVal,
+                    modeName: modeName
+                });
+            }
+        }
+        return positions;
+    }
+
+    // Crawler
+    function getNotesForAnchor(anchorFret, scaleNotes) {
+        let activeNotes = [];
+        let notesPerOctave = scaleNotes.length;
+        let currentStringStart = anchorFret; 
+        let isOpenMode = (anchorFret === 0);
+
+        for (let s = 4; s >= 0; s--) {
+            let stringBase = TUNING[s];
+            let notesFoundOnString = [];
+            let searchWidth = (notesPerOctave === 5) ? 4 : 5; 
+            
+            let minFret, maxFret;
+
+            if (isOpenMode) {
+                minFret = 0;
+                maxFret = 4;
+            } else {
+                minFret = Math.max(0, currentStringStart);
+                maxFret = minFret + searchWidth;
+            }
+            if (maxFret > FRETS) maxFret = FRETS;
+
+            for (let f = minFret; f <= maxFret; f++) {
+                let val = (stringBase + f) % 12;
+                if (scaleNotes.includes(val)) {
+                    notesFoundOnString.push({
+                        s: s,
+                        fret: f,
+                        val: val,
+                        isRoot: val === parseInt(currentRoot)
+                    });
+                }
+            }
+
+            let countToTake = (notesPerOctave === 5) ? 2 : 3;
+            let chosen = notesFoundOnString.slice(0, countToTake);
+
+            chosen.forEach(n => {
+                activeNotes.push({
+                    s: n.s,
+                    fret: n.fret,
+                    val: n.val,
+                    isRoot: n.isRoot
+                });
+            });
+
+            if (chosen.length > 0) {
+                if (isOpenMode) {
+                    currentStringStart = 0;
+                } else {
+                    let firstFret = chosen[0].fret;
+                    if (firstFret === 0 && chosen.length > 1) firstFret = chosen[1].fret;
+                    currentStringStart = firstFret;
+                }
+            }
+        }
+        return activeNotes;
+    }
+
+    // --- Interaction ---
+    function toggleNightMode() { document.body.classList.toggle('night-mode'); }
+
+    function toggleMultiMode() {
+        const checkbox = document.getElementById('multiModeCheck');
+        isMultiMode = checkbox.checked;
+        if (!isMultiMode && activeAnchors.size > 1) {
+            const first = activeAnchors.values().next().value;
+            activeAnchors.clear();
+            activeAnchors.add(first);
+        }
+        updateApp();
+    }
+
+    function resetAndUpdate() {
+        currentRoot = document.getElementById('keySelect').value;
+        currentScaleType = document.getElementById('scaleSelect').value;
+        const scaleIntervals = SCALES[currentScaleType];
+        const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+        
+        generatedPositions = generateDynamicPositions(scaleNotes);
+        
+        if (!isMultiMode || activeAnchors.size === 0) {
+            activeAnchors.clear();
+            if(generatedPositions.length > 0) activeAnchors.add(generatedPositions[0].anchorFret);
+        }
+        updateApp();
+    }
+
+    function handlePosClick(anchorFret) {
+        if (isMultiMode) {
+            if (activeAnchors.has(anchorFret)) activeAnchors.delete(anchorFret);
+            else activeAnchors.add(anchorFret);
+        } else {
+            activeAnchors.clear();
+            activeAnchors.add(anchorFret);
+        }
+        updateApp();
+    }
+
+    function updateApp() {
+        currentViewMode = document.getElementById('viewModeSelect').value;
+        const scaleIntervals = SCALES[currentScaleType];
+        const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+
+        const btnContainer = document.getElementById('posBtnContainer');
+        btnContainer.innerHTML = '';
+        
+        generatedPositions.forEach((pos, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'pos-btn';
+            if (activeAnchors.has(pos.anchorFret)) btn.classList.add('active');
+            
+            let label = (pos.anchorFret === 0) ? "Open" : `Pos ${idx + 1}`;
+            btn.innerHTML = `${label}<span class="mode-name">${pos.modeName}</span>`;
+            
+            btn.onclick = () => handlePosClick(pos.anchorFret);
+            btnContainer.appendChild(btn);
+        });
+
+        drawFretboard(scaleNotes);
+    }
+
+    // --- Drawing ---
+    function drawFretboard(scaleNotes) {
+        const svg = document.getElementById('fretboard');
+        svg.innerHTML = '';
+
+        // 1. Frets
+        for (let f = 0; f <= FRETS; f++) {
+            let x = X_START + (f * FRET_WIDTH);
+            let isNut = (f === 0);
+            
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x); line.setAttribute("y1", Y_START);
+            line.setAttribute("x2", x); line.setAttribute("y2", Y_START + 4 * STRING_GAP);
+            line.setAttribute("stroke", isNut ? "var(--nut-line)" : "var(--fret-line)");
+            line.setAttribute("stroke-width", isNut ? 5 : 2);
+            svg.appendChild(line);
+
+            if (f > 0) {
+                let txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                txt.setAttribute("x", x - FRET_WIDTH/2);
+                txt.setAttribute("y", Y_START - 10);
+                txt.setAttribute("text-anchor", "middle");
+                txt.setAttribute("fill", "var(--text-sub)");
+                txt.setAttribute("font-size", "12");
+                txt.textContent = f;
+                svg.appendChild(txt);
+            }
+
+            let cx = x - FRET_WIDTH/2;
+            let cy = Y_START + 2 * STRING_GAP;
+            if ([3,5,7,9,15,17,19,21].includes(f)) drawInlay(svg, cx, cy, false);
+            if ([12, 24].includes(f)) drawInlay(svg, cx, cy, true);
+        }
+
+        // 2. Strings
+        for (let s = 0; s < STRINGS; s++) {
+            let y = Y_START + (s * STRING_GAP);
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", X_START); line.setAttribute("y1", y);
+            line.setAttribute("x2", X_START + (FRETS * FRET_WIDTH)); line.setAttribute("y2", y);
+            line.setAttribute("stroke", "var(--string-line)");
+            line.setAttribute("stroke-width", 1 + s * 0.5);
+            svg.appendChild(line);
+        }
+
+        // 3. Ghost Notes
+        for (let s = 0; s < STRINGS; s++) {
+            for (let f = 0; f <= FRETS; f++) {
+                let val = getNoteValue(s, f);
+                if (scaleNotes.includes(val)) {
+                    drawNoteCircle(svg, s, f, val, false);
+                }
+            }
+        }
+
+        // 4. Active Notes
+        let mergedActiveNotes = new Map();
+        activeAnchors.forEach(anchorFret => {
+            let notes = getNotesForAnchor(anchorFret, scaleNotes);
+            notes.forEach(n => {
+                let key = `${n.s}-${n.fret}`;
+                if (!mergedActiveNotes.has(key) || n.isRoot) {
+                    mergedActiveNotes.set(key, n);
+                }
+            });
+        });
+
+        mergedActiveNotes.forEach(n => {
+            if (n.fret <= FRETS) {
+                drawNoteCircle(svg, n.s, n.fret, n.val, true);
+            }
+        });
+    }
+
+    function drawInlay(svg, cx, cy, isDouble) {
+        if (isDouble) {
+            createCircle(svg, cx, cy - 15, 5, "var(--inlay)");
+            createCircle(svg, cx, cy + 15, 5, "var(--inlay)");
+        } else {
+            createCircle(svg, cx, cy, 5, "var(--inlay)");
+        }
+    }
+
+    function createCircle(svg, cx, cy, r, fill) {
+        let c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
+        c.setAttribute("fill", fill);
+        svg.appendChild(c);
+    }
+
+    function drawNoteCircle(svg, s, f, val, isActive) {
+        let cx = X_START + (f * FRET_WIDTH) - (FRET_WIDTH/2);
+        if (f === 0) cx = X_START - 20;
+
+        let cy = Y_START + (s * STRING_GAP);
+        let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+        let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", cx);
+        circle.setAttribute("cy", cy);
+        
+        let isRoot = (val === parseInt(currentRoot));
+
+        if (isActive) {
+            circle.setAttribute("r", 14);
+            let color;
+            if (isRoot) color = "var(--note-root)";
+            else color = "var(--note-active)"; // Simple Blue for all active notes
+            
+            circle.setAttribute("fill", color);
+            circle.setAttribute("stroke", "var(--bg-app)");
+            circle.setAttribute("stroke-width", 2);
+        } else {
+            circle.setAttribute("r", 8);
+            circle.setAttribute("fill", "var(--note-ghost)"); 
+        }
+        g.appendChild(circle);
+
+        if (isActive || f === 0) {
+            let txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt.setAttribute("x", cx);
+            txt.setAttribute("y", cy + 1);
+            txt.setAttribute("dominant-baseline", "central");
+            txt.setAttribute("text-anchor", "middle");
+            txt.setAttribute("class", "note-text");
+            txt.setAttribute("fill", isActive ? "var(--note-text-active)" : "var(--note-text-ghost)");
+            
+            let labelText = "";
+            if (currentViewMode === 'notes') {
+                labelText = getNoteName(val);
+            } else {
+                labelText = getIntervalLabel(val);
+            }
+            
+            txt.textContent = labelText;
+            g.appendChild(txt);
+        }
+        
+        svg.appendChild(g);
+    }
+
+    resetAndUpdate();
+</script>
+</body>
+</html>
