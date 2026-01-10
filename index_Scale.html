@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bass Trainer v12: Clean & Intervals</title>
+    <title>Bass 3NPS Trainer: Scale & Intervals</title>
     <style>
         /* --- CSS Variables --- */
         :root {
@@ -106,6 +106,13 @@
             margin-top: 10px;
         }
 
+        .control-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            flex-grow: 1;
+        }
+
         select {
             padding: 8px;
             font-size: 0.9rem;
@@ -113,8 +120,14 @@
             border-radius: 6px;
             background-color: var(--bg-body);
             color: var(--text-main);
-            flex-grow: 1;
             outline: none;
+            min-width: 120px;
+        }
+        
+        /* Highlight specific controls */
+        #exerciseModeSelect, #stringPairSelect {
+            border-color: var(--note-active);
+            font-weight: bold;
         }
 
         /* Toggles */
@@ -183,8 +196,9 @@
             flex-direction: column;
             align-items: center;
             line-height: 1.1;
+            min-width: 80px;
         }
-        .pos-btn span.mode-name { font-size: 0.7rem; opacity: 0.8; font-weight: normal; }
+        .pos-btn span.mode-name { font-size: 0.7rem; opacity: 0.8; font-weight: normal; margin-top: 2px; }
         .pos-btn.active {
             background: var(--btn-active-bg);
             color: var(--btn-active-text);
@@ -224,7 +238,12 @@
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; }
         
-        .note-text { font-family: Arial, sans-serif; font-weight: bold; font-size: 11px; pointer-events: none; }
+        .note-text { 
+            font-family: Arial, sans-serif; 
+            font-weight: bold; 
+            font-size: 10px; /* Slightly smaller for Chinese characters */
+            pointer-events: none; 
+        }
 
     </style>
 </head>
@@ -233,7 +252,7 @@
     <div class="app-container">
         <div class="header-section">
             <div class="header-top">
-                <h1>Bass Trainer v12</h1>
+                <h1>Bass Trainer v13</h1>
                 <div class="switches-area">
                     <label class="toggle-container">
                         <input type="checkbox" id="nightModeCheck" onchange="toggleNightMode()">
@@ -249,32 +268,47 @@
             </div>
             
             <div class="controls-row">
-                <select id="keySelect" onchange="resetAndUpdate()">
-                    <option value="0">Key: C</option>
-                    <option value="1">Key: Db</option>
-                    <option value="2">Key: D</option>
-                    <option value="3">Key: Eb</option>
-                    <option value="4">Key: E</option>
-                    <option value="5">Key: F</option>
-                    <option value="6">Key: Gb</option>
-                    <option value="7">Key: G</option>
-                    <option value="8">Key: Ab</option>
-                    <option value="9">Key: A</option>
-                    <option value="10">Key: Bb</option>
-                    <option value="11">Key: B</option>
+                <select id="exerciseModeSelect" onchange="toggleExerciseMode()">
+                    <option value="scale">模式: 全指板音階 (Standard)</option>
+                    <option value="pair_drill" selected>模式: 雙弦模進練習 (2-String Drill)</option>
                 </select>
 
-                <select id="scaleSelect" onchange="resetAndUpdate()">
-                    <option value="major">Scale: Major (Ionian)</option>
-                    <option value="minor">Scale: Natural Minor</option>
-                    <option value="maj_pent">Scale: Major Pentatonic</option>
-                    <option value="min_pent">Scale: Minor Pentatonic</option>
-                </select>
+                <div class="control-group">
+                    <select id="keySelect" onchange="resetAndUpdate()">
+                        <option value="0">Key: C</option>
+                        <option value="1">Key: Db</option>
+                        <option value="2">Key: D</option>
+                        <option value="3">Key: Eb</option>
+                        <option value="4">Key: E</option>
+                        <option value="5">Key: F</option>
+                        <option value="6">Key: Gb</option>
+                        <option value="7">Key: G</option>
+                        <option value="8">Key: Ab</option>
+                        <option value="9">Key: A</option>
+                        <option value="10">Key: Bb</option>
+                        <option value="11">Key: B</option>
+                    </select>
 
-                <select id="viewModeSelect" onchange="updateApp()">
-                    <option value="notes">顯示: 音名 (Notes)</option>
-                    <option value="intervals">顯示: 級數 (Intervals)</option>
-                </select>
+                    <select id="scaleSelect" onchange="resetAndUpdate()">
+                        <option value="major">Scale: Major (Ionian)</option>
+                        <option value="minor">Scale: Natural Minor</option>
+                        <option value="maj_pent">Scale: Major Pentatonic</option>
+                        <option value="min_pent">Scale: Minor Pentatonic</option>
+                    </select>
+
+                    <select id="stringPairSelect" class="hidden" onchange="resetAndUpdate()">
+                        <option value="0,1">練習: G & D Strings (High)</option>
+                        <option value="1,2">練習: D & A Strings</option>
+                        <option value="2,3">練習: A & E Strings</option>
+                        <option value="3,4" selected>練習: E & B Strings (Low)</option>
+                    </select>
+
+                    <select id="viewModeSelect" onchange="updateApp()">
+                        <option value="notes">顯示: 音名 (Notes)</option>
+                        <option value="solfege" selected>顯示: 唱名 (Do Re Mi)</option>
+                        <option value="intervals">顯示: 級數 (純1/大3...)</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -309,16 +343,34 @@
         'min_pent': [0, 3, 5, 7, 10]
     };
 
-    // Intervals Definition
+    // Keep internal names standard for logic, map to Chinese for display
     const INTERVAL_NAMES = {
         'major':    ['R', '2', '3', '4', '5', '6', '7'],
         'minor':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
         'maj_pent': ['R', '2', '3', '5', '6'],
         'min_pent': ['R', 'b3', '4', '5', 'b7']
     };
+    
+    // Mapping for Chinese Display (純, 大, 小)
+    const CN_INTERVAL_MAP = {
+        'R': '純1',
+        'b2': '小2', '2': '大2',
+        'b3': '小3', '3': '大3',
+        '4': '純4', '#4': '增4', 'b5': '減5',
+        '5': '純5',
+        'b6': '小6', '6': '大6',
+        'b7': '小7', '7': '大7'
+    };
+    
+    // Fixed Movable Do Solfege (Major based)
+    const SOLFEGE_MAP = {
+        'R': 'Do', '2': 'Re', '3': 'Mi', 'b3': 'Me', 
+        '4': 'Fa', '5': 'So', '6': 'La', 'b6': 'Le', 
+        '7': 'Si', 'b7': 'Te'
+    };
 
     const SCALE_MODE_NAMES = {
-        'major': ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixo", "Aeolian", "Locrian"],
+        'major': ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"],
         'minor': ["Aeolian", "Locrian", "Ionian", "Dorian", "Phrygian", "Lydian", "Mixo"],
         'maj_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
         'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"]
@@ -326,7 +378,10 @@
 
     let currentRoot = 0;
     let currentScaleType = 'major';
-    let currentViewMode = 'notes';
+    let currentViewMode = 'solfege';
+    let exerciseMode = 'pair_drill'; 
+    let selectedPair = [3, 4];
+
     let activeAnchors = new Set([]); 
     let generatedPositions = []; 
     let isMultiMode = false;
@@ -343,22 +398,29 @@
     }
 
     function getIntervalLabel(noteVal) {
-        const scaleIntervals = SCALES[currentScaleType];
+        let type = (exerciseMode === 'pair_drill') ? 'major' : currentScaleType;
+        
+        const scaleIntervals = SCALES[type];
         const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
         const idx = scaleNotes.indexOf(noteVal);
         if (idx !== -1) {
-            return INTERVAL_NAMES[currentScaleType][idx];
+            return INTERVAL_NAMES[type][idx];
         }
         return "?";
     }
 
-    // Strict 3NPS Generation Logic
+    function getSolfegeLabel(noteVal) {
+        let interval = getIntervalLabel(noteVal);
+        return SOLFEGE_MAP[interval] || interval;
+    }
+
+    // --- Generator Logic ---
+
     function generateDynamicPositions(scaleNotes) {
         let positions = [];
         let bStringBase = TUNING[4];
         let modeNames = SCALE_MODE_NAMES[currentScaleType];
 
-        // Scan B string 0-22
         for (let f = 0; f <= 22; f++) {
             let noteVal = (bStringBase + f) % 12;
             let scaleIndex = scaleNotes.indexOf(noteVal);
@@ -366,73 +428,144 @@
             if (scaleIndex !== -1) {
                 let modeName = modeNames[scaleIndex % modeNames.length];
                 positions.push({
-                    anchorFret: f,
+                    anchorFret: f, 
                     noteVal: noteVal,
-                    modeName: modeName
+                    modeName: modeName,
+                    id: f
                 });
             }
         }
         return positions;
     }
 
-    // Crawler
-    function getNotesForAnchor(anchorFret, scaleNotes) {
-        let activeNotes = [];
-        let notesPerOctave = scaleNotes.length;
-        let currentStringStart = anchorFret; 
-        let isOpenMode = (anchorFret === 0);
+    function generatePairDrillPositions() {
+        let positions = [];
+        let scaleIntervals = SCALES['major']; 
+        let scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+        let modeNames = SCALE_MODE_NAMES['major'];
 
-        for (let s = 4; s >= 0; s--) {
-            let stringBase = TUNING[s];
-            let notesFoundOnString = [];
-            let searchWidth = (notesPerOctave === 5) ? 4 : 5; 
-            
-            let minFret, maxFret;
+        let sHigh = Math.min(...selectedPair);
+        let sLow = Math.max(...selectedPair);
 
-            if (isOpenMode) {
-                minFret = 0;
-                maxFret = 4;
-            } else {
-                minFret = Math.max(0, currentStringStart);
-                maxFret = minFret + searchWidth;
-            }
-            if (maxFret > FRETS) maxFret = FRETS;
+        for (let f = 0; f <= 15; f++) {
+            let noteVal = getNoteValue(sLow, f);
+            let scaleIdx = scaleNotes.indexOf(noteVal); 
 
-            for (let f = minFret; f <= maxFret; f++) {
-                let val = (stringBase + f) % 12;
-                if (scaleNotes.includes(val)) {
-                    notesFoundOnString.push({
-                        s: s,
-                        fret: f,
-                        val: val,
-                        isRoot: val === parseInt(currentRoot)
+            if (scaleIdx !== -1) {
+                let stepNotes = [];
+                const findFret = (s, startFret, targetDegreeIdx) => {
+                    let targetVal = scaleNotes[targetDegreeIdx % 7];
+                    for(let i=0; i<6; i++) {
+                        if (getNoteValue(s, startFret+i) === targetVal) return startFret+i;
+                    }
+                    return -1;
+                };
+
+                let validSequence = true;
+                let currentFret = f;
+                
+                for(let i=0; i<3; i++) {
+                    let fret = findFret(sLow, (i===0?f:currentFret), scaleIdx + i);
+                    if(fret === -1 || fret > FRETS) { validSequence = false; break; }
+                    stepNotes.push({ s: sLow, fret: fret, val: getNoteValue(sLow, fret) });
+                    currentFret = fret;
+                }
+
+                let highStringStartSearch = f; 
+                currentFret = highStringStartSearch;
+
+                if (validSequence) {
+                    for(let i=0; i<3; i++) {
+                        let fret = findFret(sHigh, (i===0?highStringStartSearch:currentFret), scaleIdx + 3 + i);
+                        if(fret === -1 || fret > FRETS) { validSequence = false; break; }
+                        stepNotes.push({ s: sHigh, fret: fret, val: getNoteValue(sHigh, fret) });
+                        currentFret = fret;
+                    }
+                }
+
+                if (validSequence) {
+                    let solfegeStart = SOLFEGE_MAP[INTERVAL_NAMES['major'][scaleIdx]];
+                    positions.push({
+                        id: f, 
+                        label: `Start: ${solfegeStart}`,
+                        subLabel: modeNames[scaleIdx],
+                        notes: stepNotes
                     });
                 }
             }
+        }
+        return positions;
+    }
 
-            let countToTake = (notesPerOctave === 5) ? 2 : 3;
-            let chosen = notesFoundOnString.slice(0, countToTake);
+    function getNotesForAnchor(anchorId, scaleNotes) {
+        if (exerciseMode === 'pair_drill') {
+            let pos = generatedPositions.find(p => p.id === anchorId);
+            if (!pos) return [];
+            return pos.notes.map(n => ({
+                s: n.s,
+                fret: n.fret,
+                val: n.val,
+                isRoot: n.val === parseInt(currentRoot)
+            }));
+        } else {
+            let anchorFret = anchorId;
+            let activeNotes = [];
+            let notesPerOctave = scaleNotes.length;
+            let currentStringStart = anchorFret; 
+            let isOpenMode = (anchorFret === 0);
 
-            chosen.forEach(n => {
-                activeNotes.push({
-                    s: n.s,
-                    fret: n.fret,
-                    val: n.val,
-                    isRoot: n.isRoot
-                });
-            });
+            for (let s = 4; s >= 0; s--) {
+                let stringBase = TUNING[s];
+                let notesFoundOnString = [];
+                let searchWidth = (notesPerOctave === 5) ? 4 : 5; 
+                
+                let minFret, maxFret;
 
-            if (chosen.length > 0) {
                 if (isOpenMode) {
-                    currentStringStart = 0;
+                    minFret = 0;
+                    maxFret = 4;
                 } else {
-                    let firstFret = chosen[0].fret;
-                    if (firstFret === 0 && chosen.length > 1) firstFret = chosen[1].fret;
-                    currentStringStart = firstFret;
+                    minFret = Math.max(0, currentStringStart);
+                    maxFret = minFret + searchWidth;
+                }
+                if (maxFret > FRETS) maxFret = FRETS;
+
+                for (let f = minFret; f <= maxFret; f++) {
+                    let val = (stringBase + f) % 12;
+                    if (scaleNotes.includes(val)) {
+                        notesFoundOnString.push({
+                            s: s,
+                            fret: f,
+                            val: val,
+                            isRoot: val === parseInt(currentRoot)
+                        });
+                    }
+                }
+
+                let countToTake = (notesPerOctave === 5) ? 2 : 3;
+                let chosen = notesFoundOnString.slice(0, countToTake);
+
+                chosen.forEach(n => {
+                    activeNotes.push({
+                        s: n.s,
+                        fret: n.fret,
+                        val: n.val,
+                        isRoot: n.isRoot
+                    });
+                });
+
+                if (chosen.length > 0) {
+                    if (isOpenMode) {
+                        currentStringStart = 0;
+                    } else {
+                        let firstFret = chosen[0].fret;
+                        if (firstFret === 0 && chosen.length > 1) firstFret = chosen[1].fret;
+                        currentStringStart = firstFret;
+                    }
                 }
             }
+            return activeNotes;
         }
-        return activeNotes;
     }
 
     // --- Interaction ---
@@ -449,35 +582,60 @@
         updateApp();
     }
 
+    function toggleExerciseMode() {
+        exerciseMode = document.getElementById('exerciseModeSelect').value;
+        const scaleSelect = document.getElementById('scaleSelect');
+        const pairSelect = document.getElementById('stringPairSelect');
+
+        if (exerciseMode === 'pair_drill') {
+            scaleSelect.classList.add('hidden');
+            pairSelect.classList.remove('hidden');
+            currentScaleType = 'major'; 
+        } else {
+            scaleSelect.classList.remove('hidden');
+            pairSelect.classList.add('hidden');
+            currentScaleType = scaleSelect.value;
+        }
+        resetAndUpdate();
+    }
+
     function resetAndUpdate() {
-        currentRoot = document.getElementById('keySelect').value;
-        currentScaleType = document.getElementById('scaleSelect').value;
-        const scaleIntervals = SCALES[currentScaleType];
-        const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+        currentRoot = parseInt(document.getElementById('keySelect').value);
         
-        generatedPositions = generateDynamicPositions(scaleNotes);
+        if (exerciseMode === 'scale') {
+            currentScaleType = document.getElementById('scaleSelect').value;
+            const scaleIntervals = SCALES[currentScaleType];
+            const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+            generatedPositions = generateDynamicPositions(scaleNotes);
+        } else {
+            let pairVal = document.getElementById('stringPairSelect').value.split(',').map(Number);
+            selectedPair = pairVal;
+            generatedPositions = generatePairDrillPositions();
+        }
         
         if (!isMultiMode || activeAnchors.size === 0) {
             activeAnchors.clear();
-            if(generatedPositions.length > 0) activeAnchors.add(generatedPositions[0].anchorFret);
+            if(generatedPositions.length > 0) activeAnchors.add(generatedPositions[0].id);
         }
         updateApp();
     }
 
-    function handlePosClick(anchorFret) {
+    function handlePosClick(id) {
         if (isMultiMode) {
-            if (activeAnchors.has(anchorFret)) activeAnchors.delete(anchorFret);
-            else activeAnchors.add(anchorFret);
+            if (activeAnchors.has(id)) activeAnchors.delete(id);
+            else activeAnchors.add(id);
         } else {
             activeAnchors.clear();
-            activeAnchors.add(anchorFret);
+            activeAnchors.add(id);
         }
         updateApp();
     }
 
     function updateApp() {
         currentViewMode = document.getElementById('viewModeSelect').value;
-        const scaleIntervals = SCALES[currentScaleType];
+        let scaleIntervals = SCALES['major'];
+        if (exerciseMode === 'scale') scaleIntervals = SCALES[currentScaleType];
+        
         const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
 
         const btnContainer = document.getElementById('posBtnContainer');
@@ -486,12 +644,16 @@
         generatedPositions.forEach((pos, idx) => {
             let btn = document.createElement('button');
             btn.className = 'pos-btn';
-            if (activeAnchors.has(pos.anchorFret)) btn.classList.add('active');
+            if (activeAnchors.has(pos.id)) btn.classList.add('active');
             
-            let label = (pos.anchorFret === 0) ? "Open" : `Pos ${idx + 1}`;
-            btn.innerHTML = `${label}<span class="mode-name">${pos.modeName}</span>`;
+            if (exerciseMode === 'scale') {
+                let label = (pos.id === 0) ? "Open" : `Pos ${idx + 1}`;
+                btn.innerHTML = `${label}<span class="mode-name">${pos.modeName}</span>`;
+            } else {
+                btn.innerHTML = `${pos.label}<span class="mode-name">${pos.subLabel}</span>`;
+            }
             
-            btn.onclick = () => handlePosClick(pos.anchorFret);
+            btn.onclick = () => handlePosClick(pos.id);
             btnContainer.appendChild(btn);
         });
 
@@ -503,7 +665,6 @@
         const svg = document.getElementById('fretboard');
         svg.innerHTML = '';
 
-        // 1. Frets
         for (let f = 0; f <= FRETS; f++) {
             let x = X_START + (f * FRET_WIDTH);
             let isNut = (f === 0);
@@ -532,7 +693,6 @@
             if ([12, 24].includes(f)) drawInlay(svg, cx, cy, true);
         }
 
-        // 2. Strings
         for (let s = 0; s < STRINGS; s++) {
             let y = Y_START + (s * STRING_GAP);
             let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -543,20 +703,30 @@
             svg.appendChild(line);
         }
 
-        // 3. Ghost Notes
-        for (let s = 0; s < STRINGS; s++) {
-            for (let f = 0; f <= FRETS; f++) {
-                let val = getNoteValue(s, f);
-                if (scaleNotes.includes(val)) {
-                    drawNoteCircle(svg, s, f, val, false);
+        // Ghost notes logic
+        if (exerciseMode === 'scale') {
+            for (let s = 0; s < STRINGS; s++) {
+                for (let f = 0; f <= FRETS; f++) {
+                    let val = getNoteValue(s, f);
+                    if (scaleNotes.includes(val)) {
+                        drawNoteCircle(svg, s, f, val, false);
+                    }
                 }
             }
+        } else {
+            selectedPair.forEach(s => {
+                for (let f = 0; f <= FRETS; f++) {
+                    let val = getNoteValue(s, f);
+                    if (scaleNotes.includes(val)) {
+                        drawNoteCircle(svg, s, f, val, false);
+                    }
+                }
+            });
         }
 
-        // 4. Active Notes
         let mergedActiveNotes = new Map();
-        activeAnchors.forEach(anchorFret => {
-            let notes = getNotesForAnchor(anchorFret, scaleNotes);
+        activeAnchors.forEach(anchorId => {
+            let notes = getNotesForAnchor(anchorId, scaleNotes);
             notes.forEach(n => {
                 let key = `${n.s}-${n.fret}`;
                 if (!mergedActiveNotes.has(key) || n.isRoot) {
@@ -605,7 +775,7 @@
             circle.setAttribute("r", 14);
             let color;
             if (isRoot) color = "var(--note-root)";
-            else color = "var(--note-active)"; // Simple Blue for all active notes
+            else color = "var(--note-active)";
             
             circle.setAttribute("fill", color);
             circle.setAttribute("stroke", "var(--bg-app)");
@@ -628,8 +798,12 @@
             let labelText = "";
             if (currentViewMode === 'notes') {
                 labelText = getNoteName(val);
+            } else if (currentViewMode === 'solfege') {
+                labelText = getSolfegeLabel(val);
             } else {
-                labelText = getIntervalLabel(val);
+                // Interval Mode: Translate internal notation to Chinese
+                let rawInterval = getIntervalLabel(val);
+                labelText = CN_INTERVAL_MAP[rawInterval] || rawInterval;
             }
             
             txt.textContent = labelText;
@@ -639,7 +813,7 @@
         svg.appendChild(g);
     }
 
-    resetAndUpdate();
+    toggleExerciseMode(); 
 </script>
 </body>
 </html>
