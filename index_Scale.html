@@ -3,34 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bass 3NPS Trainer: Scale & Intervals</title>
+    <title>Bass Trainer: Smart Intervals</title>
     <style>
-        /* --- CSS Variables --- */
+        /* --- CSS Variables (Permanent Night Mode) --- */
         :root {
-            --bg-body: #EAECEE;
-            --bg-app: #ffffff;
-            --text-main: #34495E;
-            --text-sub: #7f8c8d;
-            
-            --fret-line: #BDC3C7;
-            --nut-line: #2C3E50;
-            --string-line: #95a5a6;
-            --inlay: #2C3E50;
-            
-            --note-root: #E67E22;   /* Root: Orange */
-            --note-active: #2980B9; /* All other notes: Blue */
-            --note-ghost: #F0F3F4;
-            
-            --note-text-active: #ffffff;
-            --note-text-ghost: #bdc3c7;
-
-            --btn-bg: #ffffff;
-            --btn-border: #ddd;
-            --btn-active-bg: #2C3E50;
-            --btn-active-text: #ffffff;
-        }
-
-        body.night-mode {
             --bg-body: #121212;
             --bg-app: #1E1E1E;
             --text-main: #E0E0E0;
@@ -41,9 +17,10 @@
             --string-line: #555555;
             --inlay: #000000;
             
-            --note-root: #D35400;
-            --note-active: #3498DB;
-            --note-ghost: #2C2C2C;
+            --note-root: #D35400;   /* Root: Burnt Orange */
+            --note-active: #3498DB; /* Chord Tones: Blue */
+            --note-extension: #9B59B6; /* Extensions: Purple */
+            --note-ghost: #2C2C2C;  
             
             --note-text-active: #ffffff;
             --note-text-ghost: #555555;
@@ -64,7 +41,6 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            transition: background 0.3s;
         }
 
         .app-container {
@@ -72,7 +48,7 @@
             max-width: 1400px;
             background: var(--bg-app);
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -124,6 +100,13 @@
             min-width: 120px;
         }
         
+        select optgroup {
+            background-color: var(--bg-app);
+            color: var(--text-sub);
+            font-style: normal;
+            font-weight: bold;
+        }
+
         /* Highlight specific controls */
         #exerciseModeSelect, #stringPairSelect {
             border-color: var(--note-active);
@@ -148,7 +131,7 @@
             position: relative;
             width: 36px;
             height: 18px;
-            background-color: #BDC3C7;
+            background-color: #555;
             border-radius: 20px;
             transition: background-color 0.3s;
         }
@@ -162,10 +145,9 @@
             background-color: white;
             border-radius: 50%;
             transition: transform 0.3s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
         
-        #nightModeCheck:checked + .toggle-switch { background-color: #555; }
         #multiModeCheck:checked + .toggle-switch { background-color: var(--note-active); }
         input[type="checkbox"]:checked + .toggle-switch::after { transform: translateX(18px); }
 
@@ -241,7 +223,7 @@
         .note-text { 
             font-family: Arial, sans-serif; 
             font-weight: bold; 
-            font-size: 10px; /* Slightly smaller for Chinese characters */
+            font-size: 10px; 
             pointer-events: none; 
         }
 
@@ -252,24 +234,19 @@
     <div class="app-container">
         <div class="header-section">
             <div class="header-top">
-                <h1>Bass Trainer v13</h1>
+                <h1>Bass Trainer v16 (Correct Enharmonics)</h1>
                 <div class="switches-area">
-                    <label class="toggle-container">
-                        <input type="checkbox" id="nightModeCheck" onchange="toggleNightMode()">
-                        <div class="toggle-switch"></div>
-                        <span>Night</span>
-                    </label>
                     <label class="toggle-container">
                         <input type="checkbox" id="multiModeCheck" onchange="toggleMultiMode()">
                         <div class="toggle-switch"></div>
-                        <span>Multi</span>
+                        <span>Multi Select</span>
                     </label>
                 </div>
             </div>
             
             <div class="controls-row">
                 <select id="exerciseModeSelect" onchange="toggleExerciseMode()">
-                    <option value="scale">模式: 全指板音階 (Standard)</option>
+                    <option value="scale">模式: 全指板音階 (Scale/Chord)</option>
                     <option value="pair_drill" selected>模式: 雙弦模進練習 (2-String Drill)</option>
                 </select>
 
@@ -290,10 +267,32 @@
                     </select>
 
                     <select id="scaleSelect" onchange="resetAndUpdate()">
-                        <option value="major">Scale: Major (Ionian)</option>
-                        <option value="minor">Scale: Natural Minor</option>
-                        <option value="maj_pent">Scale: Major Pentatonic</option>
-                        <option value="min_pent">Scale: Minor Pentatonic</option>
+                        <optgroup label="Basic Scales">
+                            <option value="major">Scale: Major (Ionian)</option>
+                            <option value="minor">Scale: Natural Minor</option>
+                            <option value="maj_pent">Scale: Major Pentatonic</option>
+                            <option value="min_pent">Scale: Minor Pentatonic</option>
+                        </optgroup>
+                        <optgroup label="Triads">
+                            <option value="maj_triad">Chord: Major Triad</option>
+                            <option value="min_triad">Chord: Minor Triad</option>
+                            <option value="aug_triad">Chord: Augmented</option>
+                            <option value="dim_triad">Chord: Diminished</option>
+                        </optgroup>
+                        <optgroup label="7th Chords">
+                            <option value="maj7">Chord: Major 7</option>
+                            <option value="min7">Chord: Minor 7</option>
+                            <option value="dom7">Chord: Dominant 7</option>
+                            <option value="m7b5">Chord: Min7(b5)</option>
+                            <option value="dim7">Chord: Diminished 7</option>
+                        </optgroup>
+                        <optgroup label="Extended Chords">
+                            <option value="maj9">Chord: Maj 9 (R,3,5,7,9)</option>
+                            <option value="min9">Chord: Min 9 (R,b3,5,b7,9)</option>
+                            <option value="dom9">Chord: Dom 9 (R,3,5,b7,9)</option>
+                            <option value="maj7_sharp11">Chord: Maj7(#11) Lydian</option>
+                            <option value="dom13">Chord: Dom 13 (Funk)</option>
+                        </optgroup>
                     </select>
 
                     <select id="stringPairSelect" class="hidden" onchange="resetAndUpdate()">
@@ -306,7 +305,7 @@
                     <select id="viewModeSelect" onchange="updateApp()">
                         <option value="notes">顯示: 音名 (Notes)</option>
                         <option value="solfege" selected>顯示: 唱名 (Do Re Mi)</option>
-                        <option value="intervals">顯示: 級數 (純1/大3...)</option>
+                        <option value="intervals">顯示: 級數 (Root/#11/13)</option>
                     </select>
                 </div>
             </div>
@@ -321,8 +320,8 @@
 
         <div class="legend">
             <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音 (Root)</div>
-            <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>音階內音 (Active)</div>
-            <div class="legend-item"><span class="dot" style="background:var(--note-ghost)"></span>背景 (Ghost)</div>
+            <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>組成音 (Chord Tones)</div>
+            <div class="legend-item"><span class="dot" style="background:var(--note-extension)"></span>延伸音 (9 / 11 / 13)</div>
         </div>
     </div>
 
@@ -336,44 +335,115 @@
     const FRET_WIDTH = 65;
     const STRING_GAP = 40;
 
+    // --- ENHARMONIC HANDLING ---
+    const NOTES_FLAT =  ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+    const NOTES_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
     const SCALES = {
+        // Scales
         'major':    [0, 2, 4, 5, 7, 9, 11],
         'minor':    [0, 2, 3, 5, 7, 8, 10],
         'maj_pent': [0, 2, 4, 7, 9],
-        'min_pent': [0, 3, 5, 7, 10]
+        'min_pent': [0, 3, 5, 7, 10],
+        
+        // Triads
+        'maj_triad': [0, 4, 7],
+        'min_triad': [0, 3, 7],
+        'aug_triad': [0, 4, 8],
+        'dim_triad': [0, 3, 6],
+
+        // 7th Chords
+        'maj7':     [0, 4, 7, 11],
+        'min7':     [0, 3, 7, 10],
+        'dom7':     [0, 4, 7, 10],
+        'm7b5':     [0, 3, 6, 10],
+        'dim7':     [0, 3, 6, 9],
+
+        // Extended Chords (Sorted by Pitch Class)
+        'maj9':     [0, 2, 4, 7, 11],
+        'min9':     [0, 2, 3, 7, 10],
+        'dom9':     [0, 2, 4, 7, 10],
+        'maj7_sharp11': [0, 2, 4, 6, 7, 11], // R, 9, 3, #11, 5, 7
+        'dom13':    [0, 2, 4, 7, 9, 10]
     };
 
-    // Keep internal names standard for logic, map to Chinese for display
     const INTERVAL_NAMES = {
+        // Scales
         'major':    ['R', '2', '3', '4', '5', '6', '7'],
         'minor':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
         'maj_pent': ['R', '2', '3', '5', '6'],
-        'min_pent': ['R', 'b3', '4', '5', 'b7']
+        'min_pent': ['R', 'b3', '4', '5', 'b7'],
+        
+        // Triads
+        'maj_triad': ['R', '3', '5'],
+        'min_triad': ['R', 'b3', '5'],
+        'aug_triad': ['R', '3', '#5'],
+        'dim_triad': ['R', 'b3', 'b5'],
+
+        // 7th Chords
+        'maj7':     ['R', '3', '5', '7'],
+        'min7':     ['R', 'b3', '5', 'b7'],
+        'dom7':     ['R', '3', '5', 'b7'],
+        'm7b5':     ['R', 'b3', 'b5', 'b7'],
+        'dim7':     ['R', 'b3', 'b5', 'bb7'],
+
+        // Extended (Must match index of SCALES array exactly)
+        'maj9':     ['R', '9', '3', '5', '7'],
+        'min9':     ['R', '9', 'b3', '5', 'b7'],
+        'dom9':     ['R', '9', '3', '5', 'b7'],
+        'maj7_sharp11': ['R', '9', '3', '#11', '5', '7'], // #11 will trigger Sharp array
+        'dom13':    ['R', '9', '3', '5', '13', 'b7']
     };
     
-    // Mapping for Chinese Display (純, 大, 小)
     const CN_INTERVAL_MAP = {
         'R': '純1',
         'b2': '小2', '2': '大2',
         'b3': '小3', '3': '大3',
         '4': '純4', '#4': '增4', 'b5': '減5',
-        '5': '純5',
+        '5': '純5', '#5': '增5',
         'b6': '小6', '6': '大6',
-        'b7': '小7', '7': '大7'
+        'b7': '小7', 'bb7': '減7', '7': '大7',
+        // Extensions
+        '9': '大9', 'b9': '小9', '#9': '增9',
+        '11': '純11', '#11': '增11',
+        '13': '大13', 'b13': '小13'
     };
     
-    // Fixed Movable Do Solfege (Major based)
+    // Solfege Map
     const SOLFEGE_MAP = {
         'R': 'Do', '2': 'Re', '3': 'Mi', 'b3': 'Me', 
-        '4': 'Fa', '5': 'So', '6': 'La', 'b6': 'Le', 
-        '7': 'Si', 'b7': 'Te'
+        '4': 'Fa', '#4': 'Fi', 'b5': 'Se', 
+        '5': 'So', '#5': 'Si',
+        '6': 'La', 'b6': 'Le', 
+        '7': 'Si', 'b7': 'Te', 'bb7': 'La',
+        // Extensions
+        '9': 'Re', 'b9': 'Ra', '#9': 'Ri',
+        '11': 'Fa', '#11': 'Fi',
+        '13': 'La', 'b13': 'Le'
     };
 
     const SCALE_MODE_NAMES = {
         'major': ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"],
         'minor': ["Aeolian", "Locrian", "Ionian", "Dorian", "Phrygian", "Lydian", "Mixo"],
         'maj_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
-        'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"]
+        'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
+        
+        'maj_triad': ["Root Pos", "1st Inv", "2nd Inv"],
+        'min_triad': ["Root Pos", "1st Inv", "2nd Inv"],
+        'aug_triad': ["Root Pos", "1st Inv", "2nd Inv"],
+        'dim_triad': ["Root Pos", "1st Inv", "2nd Inv"],
+        
+        'maj7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
+        'min7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
+        'dom7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
+        'm7b5': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
+        'dim7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
+
+        'maj9': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5"],
+        'min9': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5"],
+        'dom9': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5"],
+        'maj7_sharp11': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5", "Pos 6"],
+        'dom13': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5", "Pos 6"]
     };
 
     let currentRoot = 0;
@@ -392,9 +462,18 @@
         return (TUNING[stringIdx] + fret) % 12;
     }
 
-    function getNoteName(val) {
-        const names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-        return names[val];
+    // New Smart Name Logic
+    function getNoteName(val, interval) {
+        // If the interval explicitly contains '#' (like #11, #5), use Sharp spelling
+        if (interval && interval.includes('#')) {
+            return NOTES_SHARP[val];
+        }
+        // If the interval explicitly contains 'b' (like b3, b7), use Flat spelling
+        if (interval && interval.includes('b')) {
+            return NOTES_FLAT[val];
+        }
+        // Default to Flat (Standard for general fretboard visualization unless Key awareness is added)
+        return NOTES_FLAT[val];
     }
 
     function getIntervalLabel(noteVal) {
@@ -402,25 +481,26 @@
         
         const scaleIntervals = SCALES[type];
         const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+        
         const idx = scaleNotes.indexOf(noteVal);
         if (idx !== -1) {
             return INTERVAL_NAMES[type][idx];
         }
-        return "?";
+        return null;
     }
 
     function getSolfegeLabel(noteVal) {
         let interval = getIntervalLabel(noteVal);
-        return SOLFEGE_MAP[interval] || interval;
+        return SOLFEGE_MAP[interval] || interval || "?";
     }
 
     // --- Generator Logic ---
 
     function generateDynamicPositions(scaleNotes) {
         let positions = [];
-        let bStringBase = TUNING[4];
+        let bStringBase = TUNING[4]; 
         let modeNames = SCALE_MODE_NAMES[currentScaleType];
-
+        
         for (let f = 0; f <= 22; f++) {
             let noteVal = (bStringBase + f) % 12;
             let scaleIndex = scaleNotes.indexOf(noteVal);
@@ -517,7 +597,7 @@
             for (let s = 4; s >= 0; s--) {
                 let stringBase = TUNING[s];
                 let notesFoundOnString = [];
-                let searchWidth = (notesPerOctave === 5) ? 4 : 5; 
+                let searchWidth = 5; 
                 
                 let minFret, maxFret;
 
@@ -542,7 +622,7 @@
                     }
                 }
 
-                let countToTake = (notesPerOctave === 5) ? 2 : 3;
+                let countToTake = 3; 
                 let chosen = notesFoundOnString.slice(0, countToTake);
 
                 chosen.forEach(n => {
@@ -569,8 +649,6 @@
     }
 
     // --- Interaction ---
-    function toggleNightMode() { document.body.classList.toggle('night-mode'); }
-
     function toggleMultiMode() {
         const checkbox = document.getElementById('multiModeCheck');
         isMultiMode = checkbox.checked;
@@ -703,7 +781,6 @@
             svg.appendChild(line);
         }
 
-        // Ghost notes logic
         if (exerciseMode === 'scale') {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
@@ -770,11 +847,15 @@
         circle.setAttribute("cy", cy);
         
         let isRoot = (val === parseInt(currentRoot));
+        
+        let intervalLabel = getIntervalLabel(val);
+        let isExtension = ['9', '11', '#11', '13', 'b9', '#9', 'b13'].includes(intervalLabel);
 
         if (isActive) {
             circle.setAttribute("r", 14);
             let color;
             if (isRoot) color = "var(--note-root)";
+            else if (isExtension) color = "var(--note-extension)";
             else color = "var(--note-active)";
             
             circle.setAttribute("fill", color);
@@ -797,13 +878,13 @@
             
             let labelText = "";
             if (currentViewMode === 'notes') {
-                labelText = getNoteName(val);
+                // Here we pass the intervalLabel to determine context (Sharp or Flat)
+                labelText = getNoteName(val, intervalLabel);
             } else if (currentViewMode === 'solfege') {
                 labelText = getSolfegeLabel(val);
             } else {
-                // Interval Mode: Translate internal notation to Chinese
                 let rawInterval = getIntervalLabel(val);
-                labelText = CN_INTERVAL_MAP[rawInterval] || rawInterval;
+                labelText = CN_INTERVAL_MAP[rawInterval] || rawInterval || "?";
             }
             
             txt.textContent = labelText;
