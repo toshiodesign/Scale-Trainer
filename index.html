@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bass Trainer: Smart Intervals</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bass Trainer: Pan & Zoom</title>
     <style>
         /* --- CSS Variables (Permanent Night Mode) --- */
         :root {
@@ -41,6 +41,7 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
+            overflow-x: hidden; /* 防止整體頁面橫向滾動 */
         }
 
         .app-container {
@@ -52,6 +53,8 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            /* 防止 iOS safari 彈性滾動影響操作 */
+            position: relative;
         }
 
         /* --- Header --- */
@@ -59,6 +62,8 @@
             padding: 15px 20px;
             border-bottom: 1px solid var(--fret-line);
             background: var(--bg-app);
+            z-index: 10; /* 確保 Header 在指板之上 */
+            position: relative;
         }
 
         .header-top {
@@ -160,6 +165,7 @@
             background: var(--bg-app);
             border-bottom: 1px solid var(--fret-line);
             scrollbar-width: none;
+            z-index: 10;
         }
         .pos-buttons-container::-webkit-scrollbar { display: none; }
 
@@ -188,21 +194,38 @@
             font-weight: 600;
         }
 
-        /* --- Fretboard --- */
-        .fretboard-container {
+        /* --- Fretboard (Updated for Zoom) --- */
+        .fretboard-wrapper {
             width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
+            /* 限制高度，避免 SVG 過大撐開版面，讓它變成可滾動視窗 */
+            height: 60vh; 
+            min-height: 300px;
             background: var(--bg-app);
             display: flex;
             justify-content: center;
+            align-items: flex-start; /* 改為 top align */
+            overflow: hidden; /* 隱藏溢出的 SVG */
+            position: relative;
+            touch-action: none; /* 關鍵：禁止瀏覽器預設的滾動與縮放，交給 JS 處理 */
+            cursor: grab;
+        }
+        
+        .fretboard-wrapper:active {
+            cursor: grabbing;
+        }
+
+        /* 這是實際被縮放的容器 */
+        .fretboard-transform-layer {
+            transform-origin: 0 0;
+            width: 100%;
+            will-change: transform;
         }
 
         svg {
             display: block;
-            width: 100%;
+            width: 100%; 
             height: auto;
-            max-width: 1600px;
+            /* 移除 max-width 限制，讓它可以自由縮放 */
         }
 
         /* Legend */
@@ -216,6 +239,7 @@
             justify-content: center;
             flex-wrap: wrap;
             color: var(--text-sub);
+            z-index: 10;
         }
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -227,6 +251,23 @@
             pointer-events: none; 
         }
 
+        /* Reset Button Overlay */
+        .reset-zoom-btn {
+            position: absolute;
+            bottom: 60px; /* Legend height approx */
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: 1px solid #555;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            z-index: 20;
+            opacity: 0.8;
+        }
+        .reset-zoom-btn:hover { opacity: 1; }
+
     </style>
 </head>
 <body>
@@ -234,7 +275,7 @@
     <div class="app-container">
         <div class="header-section">
             <div class="header-top">
-                <h1>Scale Trainer v16</h1>
+                <h1>Bass Trainer v17 (Zoomable)</h1>
                 <div class="switches-area">
                     <label class="toggle-container">
                         <input type="checkbox" id="multiModeCheck" onchange="toggleMultiMode()">
@@ -313,10 +354,13 @@
 
         <div class="pos-buttons-container" id="posBtnContainer"></div>
 
-        <div class="fretboard-container">
-            <svg id="fretboard" viewBox="0 0 1650 240" preserveAspectRatio="xMidYMid meet">
+        <div class="fretboard-wrapper" id="zoomContainer">
+            <div class="fretboard-transform-layer" id="zoomLayer">
+                <svg id="fretboard" viewBox="0 0 1650 240" preserveAspectRatio="xMidYMid meet">
                 </svg>
+            </div>
         </div>
+        <button class="reset-zoom-btn" onclick="resetZoom()">Reset View</button>
 
         <div class="legend">
             <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音 (Root)</div>
@@ -359,11 +403,11 @@
         'm7b5':     [0, 3, 6, 10],
         'dim7':     [0, 3, 6, 9],
 
-        // Extended Chords (Sorted by Pitch Class)
+        // Extended Chords
         'maj9':     [0, 2, 4, 7, 11],
         'min9':     [0, 2, 3, 7, 10],
         'dom9':     [0, 2, 4, 7, 10],
-        'maj7_sharp11': [0, 2, 4, 6, 7, 11], // R, 9, 3, #11, 5, 7
+        'maj7_sharp11': [0, 2, 4, 6, 7, 11], 
         'dom13':    [0, 2, 4, 7, 9, 10]
     };
 
@@ -387,11 +431,11 @@
         'm7b5':     ['R', 'b3', 'b5', 'b7'],
         'dim7':     ['R', 'b3', 'b5', 'bb7'],
 
-        // Extended (Must match index of SCALES array exactly)
+        // Extended
         'maj9':     ['R', '9', '3', '5', '7'],
         'min9':     ['R', '9', 'b3', '5', 'b7'],
         'dom9':     ['R', '9', '3', '5', 'b7'],
-        'maj7_sharp11': ['R', '9', '3', '#11', '5', '7'], // #11 will trigger Sharp array
+        'maj7_sharp11': ['R', '9', '3', '#11', '5', '7'], 
         'dom13':    ['R', '9', '3', '5', '13', 'b7']
     };
     
@@ -409,14 +453,12 @@
         '13': '大13', 'b13': '小13'
     };
     
-    // Solfege Map
     const SOLFEGE_MAP = {
         'R': 'Do', '2': 'Re', '3': 'Mi', 'b3': 'Me', 
         '4': 'Fa', '#4': 'Fi', 'b5': 'Se', 
         '5': 'So', '#5': 'Si',
         '6': 'La', 'b6': 'Le', 
         '7': 'Si', 'b7': 'Te', 'bb7': 'La',
-        // Extensions
         '9': 'Re', 'b9': 'Ra', '#9': 'Ri',
         '11': 'Fa', '#11': 'Fi',
         '13': 'La', 'b13': 'Le'
@@ -462,23 +504,14 @@
         return (TUNING[stringIdx] + fret) % 12;
     }
 
-    // New Smart Name Logic
     function getNoteName(val, interval) {
-        // If the interval explicitly contains '#' (like #11, #5), use Sharp spelling
-        if (interval && interval.includes('#')) {
-            return NOTES_SHARP[val];
-        }
-        // If the interval explicitly contains 'b' (like b3, b7), use Flat spelling
-        if (interval && interval.includes('b')) {
-            return NOTES_FLAT[val];
-        }
-        // Default to Flat (Standard for general fretboard visualization unless Key awareness is added)
+        if (interval && interval.includes('#')) return NOTES_SHARP[val];
+        if (interval && interval.includes('b')) return NOTES_FLAT[val];
         return NOTES_FLAT[val];
     }
 
     function getIntervalLabel(noteVal) {
         let type = (exerciseMode === 'pair_drill') ? 'major' : currentScaleType;
-        
         const scaleIntervals = SCALES[type];
         const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
         
@@ -878,7 +911,6 @@
             
             let labelText = "";
             if (currentViewMode === 'notes') {
-                // Here we pass the intervalLabel to determine context (Sharp or Flat)
                 labelText = getNoteName(val, intervalLabel);
             } else if (currentViewMode === 'solfege') {
                 labelText = getSolfegeLabel(val);
@@ -894,9 +926,112 @@
         svg.appendChild(g);
     }
 
+    // --- PAN & ZOOM LOGIC ---
+    let zoomState = {
+        scale: 1,
+        panning: false,
+        pointX: 0,
+        pointY: 0,
+        startX: 0,
+        startY: 0,
+        initialDist: 0,
+        lastScale: 1
+    };
+
+    const container = document.getElementById('zoomContainer');
+    const zoomLayer = document.getElementById('zoomLayer');
+
+    function setTransform() {
+        zoomLayer.style.transform = `translate(${zoomState.pointX}px, ${zoomState.pointY}px) scale(${zoomState.scale})`;
+    }
+
+    function resetZoom() {
+        zoomState = { scale: 1, panning: false, pointX: 0, pointY: 0, startX: 0, startY: 0, initialDist: 0, lastScale: 1 };
+        setTransform();
+    }
+
+    // Touch Events
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            zoomState.panning = true;
+            zoomState.startX = e.touches[0].clientX - zoomState.pointX;
+            zoomState.startY = e.touches[0].clientY - zoomState.pointY;
+        } else if (e.touches.length === 2) {
+            zoomState.panning = false;
+            zoomState.initialDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            zoomState.lastScale = zoomState.scale;
+        }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // Prevent standard scroll
+
+        if (e.touches.length === 1 && zoomState.panning) {
+            zoomState.pointX = e.touches[0].clientX - zoomState.startX;
+            zoomState.pointY = e.touches[0].clientY - zoomState.startY;
+            setTransform();
+        } else if (e.touches.length === 2) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            const ratio = dist / zoomState.initialDist;
+            let newScale = zoomState.lastScale * ratio;
+            
+            // Limits
+            newScale = Math.min(Math.max(0.5, newScale), 4);
+            
+            zoomState.scale = newScale;
+            setTransform();
+        }
+    });
+
+    container.addEventListener('touchend', () => {
+        zoomState.panning = false;
+    });
+
+    // Mouse Events (For Desktop testing)
+    container.addEventListener('mousedown', (e) => {
+        zoomState.panning = true;
+        zoomState.startX = e.clientX - zoomState.pointX;
+        zoomState.startY = e.clientY - zoomState.pointY;
+        container.style.cursor = 'grabbing';
+    });
+
+    container.addEventListener('mousemove', (e) => {
+        if (!zoomState.panning) return;
+        e.preventDefault();
+        zoomState.pointX = e.clientX - zoomState.startX;
+        zoomState.pointY = e.clientY - zoomState.startY;
+        setTransform();
+    });
+
+    container.addEventListener('mouseup', () => {
+        zoomState.panning = false;
+        container.style.cursor = 'grab';
+    });
+
+    container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const xs = (e.clientX - zoomState.pointX) / zoomState.scale;
+        const ys = (e.clientY - zoomState.pointY) / zoomState.scale;
+        const delta = -e.deltaY;
+        
+        let newScale = delta > 0 ? zoomState.scale * 1.1 : zoomState.scale / 1.1;
+        newScale = Math.min(Math.max(0.5, newScale), 4);
+
+        // Simple center zoom logic
+        zoomState.pointX = e.clientX - xs * newScale;
+        zoomState.pointY = e.clientY - ys * newScale;
+        zoomState.scale = newScale;
+
+        setTransform();
+    });
+
     toggleExerciseMode(); 
 </script>
 </body>
 </html>
-
-
