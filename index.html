@@ -111,7 +111,12 @@
             font-weight: bold;
         }
 
-        #exerciseModeSelect, #stringPairSelect {
+        /* Highlight exercise inputs */
+        #exerciseModeSelect, 
+        #stringPairSelect, 
+        #stringTripletSelect, 
+        #stringQuadSelect, 
+        #stringQuintSelect {
             border-color: var(--note-active);
             font-weight: bold;
         }
@@ -192,16 +197,15 @@
             font-weight: 600;
         }
 
-        /* --- Fretboard Container --- */
+        /* --- Fretboard Wrapper --- */
         .fretboard-wrapper {
             width: 100%;
             height: 60vh; 
             min-height: 300px;
             background: var(--bg-app);
-            /* 改為 relative，不再需要 transform layer */
             position: relative;
             overflow: hidden;
-            touch-action: none; /* 禁止瀏覽器預設滾動，完全接管 */
+            touch-action: none; 
             cursor: grab;
         }
         
@@ -212,8 +216,8 @@
         svg {
             display: block;
             width: 100%; 
-            height: 100%; /* SVG 佔滿容器，內容由 viewBox 控制 */
-            pointer-events: none; /* 讓事件穿透到 wrapper 處理 */
+            height: 100%;
+            pointer-events: none; 
         }
 
         /* Legend */
@@ -237,7 +241,6 @@
             font-weight: bold; 
             font-size: 10px; 
             pointer-events: none; 
-            /* 讓文字在縮放時保持清晰 */
             text-rendering: geometricPrecision; 
         }
 
@@ -256,6 +259,8 @@
             z-index: 20;
         }
         .reset-zoom-btn:hover { background: var(--btn-active-bg); }
+        
+        .hidden { display: none !important; }
 
     </style>
 </head>
@@ -276,8 +281,11 @@
             
             <div class="controls-row">
                 <select id="exerciseModeSelect" onchange="toggleExerciseMode()">
-                    <option value="scale">模式: 全指板音階 (Scale/Chord)</option>
-                    <option value="pair_drill" selected>模式: 雙弦模進練習 (2-String Drill)</option>
+                    <option value="scale">模式: 全指板音階 (Standard)</option>
+                    <option value="pair_drill">模式: 雙弦模進 (2-String)</option>
+                    <option value="triplet_drill" selected>模式: 三弦模進 (3-String)</option>
+                    <option value="quad_drill">模式: 四弦模進 (4-String)</option>
+                    <option value="quint_drill">模式: 五弦模進 (5-String)</option>
                 </select>
 
                 <div class="control-group">
@@ -303,39 +311,34 @@
                             <option value="maj_pent">Scale: Major Pentatonic</option>
                             <option value="min_pent">Scale: Minor Pentatonic</option>
                         </optgroup>
-                        <optgroup label="Triads">
-                            <option value="maj_triad">Chord: Major Triad</option>
-                            <option value="min_triad">Chord: Minor Triad</option>
-                            <option value="aug_triad">Chord: Augmented</option>
-                            <option value="dim_triad">Chord: Diminished</option>
-                        </optgroup>
-                        <optgroup label="7th Chords">
-                            <option value="maj7">Chord: Major 7</option>
-                            <option value="min7">Chord: Minor 7</option>
-                            <option value="dom7">Chord: Dominant 7</option>
-                            <option value="m7b5">Chord: Min7(b5)</option>
-                            <option value="dim7">Chord: Diminished 7</option>
-                        </optgroup>
-                        <optgroup label="Extended Chords">
-                            <option value="maj9">Chord: Maj 9 (R,3,5,7,9)</option>
-                            <option value="min9">Chord: Min 9 (R,b3,5,b7,9)</option>
-                            <option value="dom9">Chord: Dom 9 (R,3,5,b7,9)</option>
-                            <option value="maj7_sharp11">Chord: Maj7(#11) Lydian</option>
-                            <option value="dom13">Chord: Dom 13 (Funk)</option>
-                        </optgroup>
                     </select>
 
                     <select id="stringPairSelect" class="hidden" onchange="resetAndUpdate()">
-                        <option value="0,1">練習: G & D Strings (High)</option>
-                        <option value="1,2">練習: D & A Strings</option>
-                        <option value="2,3">練習: A & E Strings</option>
-                        <option value="3,4" selected>練習: E & B Strings (Low)</option>
+                        <option value="0,1">練習: D & G (High)</option>
+                        <option value="1,2">練習: A & D (Mid)</option>
+                        <option value="2,3">練習: E & A (Mid-Low)</option>
+                        <option value="3,4">練習: B & E (Low)</option>
+                    </select>
+                    
+                    <select id="stringTripletSelect" class="hidden" onchange="resetAndUpdate()">
+                        <option value="0,1,2">練習: A-D-G (High Set)</option>
+                        <option value="1,2,3">練習: E-A-D (Standard)</option>
+                        <option value="2,3,4" selected>練習: B-E-A (Low Set)</option>
+                    </select>
+
+                    <select id="stringQuadSelect" class="hidden" onchange="resetAndUpdate()">
+                        <option value="0,1,2,3">練習: G-D-A-E (Standard 4)</option>
+                        <option value="1,2,3,4" selected>練習: B-E-A-D (Low 4)</option>
+                    </select>
+
+                    <select id="stringQuintSelect" class="hidden" onchange="resetAndUpdate()">
+                        <option value="0,1,2,3,4" selected>練習: B-E-A-D-G (Full 5)</option>
                     </select>
 
                     <select id="viewModeSelect" onchange="updateApp()">
-                        <option value="notes">顯示: 音名 (Notes)</option>
-                        <option value="solfege" selected>顯示: 唱名 (Do Re Mi)</option>
-                        <option value="intervals">顯示: 級數 (Root/#11/13)</option>
+                        <option value="notes">顯示: 音名</option>
+                        <option value="solfege" selected>顯示: 唱名</option>
+                        <option value="intervals">顯示: 級數</option>
                     </select>
                 </div>
             </div>
@@ -351,14 +354,14 @@
 
         <div class="legend">
             <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音 (Root)</div>
-            <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>組成音 (Chord Tones)</div>
-            <div class="legend-item"><span class="dot" style="background:var(--note-extension)"></span>延伸音 (9 / 11 / 13)</div>
+            <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>組成音</div>
+            <div class="legend-item"><span class="dot" style="background:var(--note-extension)"></span>延伸音</div>
         </div>
     </div>
 
 <script>
     const FRETS = 24;
-    const TUNING = [7, 2, 9, 4, 11]; // G, D, A, E, B
+    const TUNING = [7, 2, 9, 4, 11]; // G, D, A, E, B (0=G, 4=B)
     const STRINGS = 5;
 
     // SVG Base Dimensions
@@ -376,42 +379,14 @@
         'major':    [0, 2, 4, 5, 7, 9, 11],
         'minor':    [0, 2, 3, 5, 7, 8, 10],
         'maj_pent': [0, 2, 4, 7, 9],
-        'min_pent': [0, 3, 5, 7, 10],
-        'maj_triad': [0, 4, 7],
-        'min_triad': [0, 3, 7],
-        'aug_triad': [0, 4, 8],
-        'dim_triad': [0, 3, 6],
-        'maj7':     [0, 4, 7, 11],
-        'min7':     [0, 3, 7, 10],
-        'dom7':     [0, 4, 7, 10],
-        'm7b5':     [0, 3, 6, 10],
-        'dim7':     [0, 3, 6, 9],
-        'maj9':     [0, 2, 4, 7, 11],
-        'min9':     [0, 2, 3, 7, 10],
-        'dom9':     [0, 2, 4, 7, 10],
-        'maj7_sharp11': [0, 2, 4, 6, 7, 11], 
-        'dom13':    [0, 2, 4, 7, 9, 10]
+        'min_pent': [0, 3, 5, 7, 10]
     };
 
     const INTERVAL_NAMES = {
         'major':    ['R', '2', '3', '4', '5', '6', '7'],
         'minor':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
         'maj_pent': ['R', '2', '3', '5', '6'],
-        'min_pent': ['R', 'b3', '4', '5', 'b7'],
-        'maj_triad': ['R', '3', '5'],
-        'min_triad': ['R', 'b3', '5'],
-        'aug_triad': ['R', '3', '#5'],
-        'dim_triad': ['R', 'b3', 'b5'],
-        'maj7':     ['R', '3', '5', '7'],
-        'min7':     ['R', 'b3', '5', 'b7'],
-        'dom7':     ['R', '3', '5', 'b7'],
-        'm7b5':     ['R', 'b3', 'b5', 'b7'],
-        'dim7':     ['R', 'b3', 'b5', 'bb7'],
-        'maj9':     ['R', '9', '3', '5', '7'],
-        'min9':     ['R', '9', 'b3', '5', 'b7'],
-        'dom9':     ['R', '9', '3', '5', 'b7'],
-        'maj7_sharp11': ['R', '9', '3', '#11', '5', '7'], 
-        'dom13':    ['R', '9', '3', '5', '13', 'b7']
+        'min_pent': ['R', 'b3', '4', '5', 'b7']
     };
     
     const CN_INTERVAL_MAP = {
@@ -421,10 +396,7 @@
         '4': '純4', '#4': '增4', 'b5': '減5',
         '5': '純5', '#5': '增5',
         'b6': '小6', '6': '大6',
-        'b7': '小7', 'bb7': '減7', '7': '大7',
-        '9': '大9', 'b9': '小9', '#9': '增9',
-        '11': '純11', '#11': '增11',
-        '13': '大13', 'b13': '小13'
+        'b7': '小7', 'bb7': '減7', '7': '大7'
     };
     
     const SOLFEGE_MAP = {
@@ -432,41 +404,21 @@
         '4': 'Fa', '#4': 'Fi', 'b5': 'Se', 
         '5': 'So', '#5': 'Si',
         '6': 'La', 'b6': 'Le', 
-        '7': 'Si', 'b7': 'Te', 'bb7': 'La',
-        '9': 'Re', 'b9': 'Ra', '#9': 'Ri',
-        '11': 'Fa', '#11': 'Fi',
-        '13': 'La', 'b13': 'Le'
+        '7': 'Si', 'b7': 'Te', 'bb7': 'La'
     };
 
     const SCALE_MODE_NAMES = {
         'major': ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"],
         'minor': ["Aeolian", "Locrian", "Ionian", "Dorian", "Phrygian", "Lydian", "Mixo"],
         'maj_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
-        'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
-        
-        'maj_triad': ["Root Pos", "1st Inv", "2nd Inv"],
-        'min_triad': ["Root Pos", "1st Inv", "2nd Inv"],
-        'aug_triad': ["Root Pos", "1st Inv", "2nd Inv"],
-        'dim_triad': ["Root Pos", "1st Inv", "2nd Inv"],
-        
-        'maj7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
-        'min7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
-        'dom7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
-        'm7b5': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
-        'dim7': ["Root Pos", "1st Inv", "2nd Inv", "3rd Inv"],
-
-        'maj9': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5"],
-        'min9': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5"],
-        'dom9': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5"],
-        'maj7_sharp11': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5", "Pos 6"],
-        'dom13': ["Pos 1", "Pos 2", "Pos 3", "Pos 4", "Pos 5", "Pos 6"]
+        'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"]
     };
 
     let currentRoot = 0;
     let currentScaleType = 'major';
     let currentViewMode = 'solfege';
-    let exerciseMode = 'pair_drill'; 
-    let selectedPair = [3, 4];
+    let exerciseMode = 'triplet_drill'; 
+    let selectedStrings = [2, 3, 4]; // Default A, E, B
 
     let activeAnchors = new Set([]); 
     let generatedPositions = []; 
@@ -485,7 +437,7 @@
     }
 
     function getIntervalLabel(noteVal) {
-        let type = (exerciseMode === 'pair_drill') ? 'major' : currentScaleType;
+        let type = (exerciseMode !== 'scale') ? 'major' : currentScaleType;
         const scaleIntervals = SCALES[type];
         const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
         
@@ -501,17 +453,19 @@
         return SOLFEGE_MAP[interval] || interval || "?";
     }
 
+    // --- Generator Logic ---
+
     function generateDynamicPositions(scaleNotes) {
         let positions = [];
         let bStringBase = TUNING[4]; 
-        let modeNames = SCALE_MODE_NAMES[currentScaleType];
+        let modeNames = SCALE_MODE_NAMES[currentScaleType] || [];
         
         for (let f = 0; f <= 22; f++) {
             let noteVal = (bStringBase + f) % 12;
             let scaleIndex = scaleNotes.indexOf(noteVal);
             
             if (scaleIndex !== -1) {
-                let modeName = modeNames[scaleIndex % modeNames.length];
+                let modeName = modeNames[scaleIndex % modeNames.length] || "";
                 positions.push({
                     anchorFret: f, 
                     noteVal: noteVal,
@@ -523,60 +477,78 @@
         return positions;
     }
 
-    function generatePairDrillPositions() {
+    /**
+     * UNIFIED DRILL GENERATOR
+     * Handles 2, 3, 4, and 5 string sequences dynamically.
+     */
+    function generateSequenceDrillPositions() {
         let positions = [];
         let scaleIntervals = SCALES['major']; 
         let scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
         let modeNames = SCALE_MODE_NAMES['major'];
 
-        let sHigh = Math.min(...selectedPair);
-        let sLow = Math.max(...selectedPair);
+        // Sort selected strings High Index (Low Pitch) -> Low Index (High Pitch)
+        // e.g. [4, 3, 2] = B, E, A
+        let sortedStrings = [...selectedStrings].sort((a,b) => b-a);
 
-        // Fill to 24 Frets
+        // Iterate through frets to find starting points on the lowest string
         for (let f = 0; f <= FRETS; f++) {
-            let noteVal = getNoteValue(sLow, f);
+            let startString = sortedStrings[0]; // Lowest string
+            let noteVal = getNoteValue(startString, f);
             let scaleIdx = scaleNotes.indexOf(noteVal); 
 
             if (scaleIdx !== -1) {
                 let stepNotes = [];
-                const findFret = (s, startFret, targetDegreeIdx) => {
-                    let targetVal = scaleNotes[targetDegreeIdx % 7];
-                    for(let i=0; i<6; i++) {
-                        let tryFret = startFret + i;
-                        if (tryFret > FRETS) continue;
-                        if (getNoteValue(s, tryFret) === targetVal) return tryFret;
-                    }
-                    return -1;
-                };
-
                 let validSequence = true;
-                let currentFret = f;
-                
-                for(let i=0; i<3; i++) {
-                    let fret = findFret(sLow, (i===0?f:currentFret), scaleIdx + i);
-                    if(fret === -1) { validSequence = false; break; }
-                    stepNotes.push({ s: sLow, fret: fret, val: getNoteValue(sLow, fret) });
-                    currentFret = fret;
-                }
+                let currentScaleStep = scaleIdx;
+                let currentFret = f; // Start search pointer
 
-                let highStringStartSearch = f; 
-                currentFret = highStringStartSearch;
+                // Loop through each string in the sequence
+                for (let i = 0; i < sortedStrings.length; i++) {
+                    let s = sortedStrings[i];
+                    
+                    // Reset search for higher strings roughly to original fret 
+                    // (Standard 3NPS box shape logic stays near anchor)
+                    let searchStart = (i === 0) ? f : f; 
+                    
+                    // For each string, find 3 notes (3NPS)
+                    for (let n = 0; n < 3; n++) {
+                        // Look for the specific scale degree
+                        let targetVal = scaleNotes[currentScaleStep % 7];
+                        let foundFret = -1;
 
-                if (validSequence) {
-                    for(let i=0; i<3; i++) {
-                        let fret = findFret(sHigh, (i===0?highStringStartSearch:currentFret), scaleIdx + 3 + i);
-                        if(fret === -1) { validSequence = false; break; }
-                        stepNotes.push({ s: sHigh, fret: fret, val: getNoteValue(sHigh, fret) });
-                        currentFret = fret;
+                        // Scan a reasonable range (0 to +5 frets from anchor)
+                        for (let scan = 0; scan < 6; scan++) {
+                            let tryFret = searchStart + scan;
+                            if (tryFret > FRETS) continue;
+                            if (getNoteValue(s, tryFret) === targetVal) {
+                                foundFret = tryFret;
+                                break; 
+                            }
+                        }
+
+                        if (foundFret === -1) {
+                            validSequence = false;
+                            break;
+                        }
+
+                        stepNotes.push({ s: s, fret: foundFret, val: getNoteValue(s, foundFret) });
+                        
+                        // Prepare for next note
+                        currentScaleStep++;
+                        // If we found a note, next search on same string should start there (or near)
+                        // But for simplicity in 3NPS, finding next scale degree usually works forward
                     }
+                    if (!validSequence) break;
                 }
 
                 if (validSequence) {
                     let solfegeStart = SOLFEGE_MAP[INTERVAL_NAMES['major'][scaleIdx]];
+                    let strCount = sortedStrings.length;
                     positions.push({
                         id: f, 
                         label: `Start: ${solfegeStart}`,
-                        subLabel: modeNames[scaleIdx],
+                        subLabel: `${modeNames[scaleIdx]} (${strCount}-Str)`,
                         notes: stepNotes
                     });
                 }
@@ -585,8 +557,10 @@
         return positions;
     }
 
+
     function getNotesForAnchor(anchorId, scaleNotes) {
-        if (exerciseMode === 'pair_drill') {
+        if (exerciseMode !== 'scale') {
+            // All Drill Modes
             let pos = generatedPositions.find(p => p.id === anchorId);
             if (!pos) return [];
             return pos.notes.map(n => ({
@@ -596,6 +570,7 @@
                 isRoot: n.val === parseInt(currentRoot)
             }));
         } else {
+            // Standard Crawler Logic
             let anchorFret = anchorId;
             let activeNotes = [];
             let notesPerOctave = scaleNotes.length;
@@ -670,17 +645,33 @@
 
     function toggleExerciseMode() {
         exerciseMode = document.getElementById('exerciseModeSelect').value;
-        const scaleSelect = document.getElementById('scaleSelect');
-        const pairSelect = document.getElementById('stringPairSelect');
+        
+        const selectors = [
+            'scaleSelect', 
+            'stringPairSelect', 
+            'stringTripletSelect', 
+            'stringQuadSelect', 
+            'stringQuintSelect'
+        ];
+        
+        // Hide all
+        selectors.forEach(id => document.getElementById(id).classList.add('hidden'));
 
-        if (exerciseMode === 'pair_drill') {
-            scaleSelect.classList.add('hidden');
-            pairSelect.classList.remove('hidden');
+        if (exerciseMode === 'scale') {
+            document.getElementById('scaleSelect').classList.remove('hidden');
+            currentScaleType = document.getElementById('scaleSelect').value;
+        } else if (exerciseMode === 'pair_drill') {
+            document.getElementById('stringPairSelect').classList.remove('hidden');
             currentScaleType = 'major'; 
-        } else {
-            scaleSelect.classList.remove('hidden');
-            pairSelect.classList.add('hidden');
-            currentScaleType = scaleSelect.value;
+        } else if (exerciseMode === 'triplet_drill') {
+            document.getElementById('stringTripletSelect').classList.remove('hidden');
+            currentScaleType = 'major';
+        } else if (exerciseMode === 'quad_drill') {
+            document.getElementById('stringQuadSelect').classList.remove('hidden');
+            currentScaleType = 'major';
+        } else if (exerciseMode === 'quint_drill') {
+            document.getElementById('stringQuintSelect').classList.remove('hidden');
+            currentScaleType = 'major';
         }
         resetAndUpdate();
     }
@@ -694,9 +685,16 @@
             const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
             generatedPositions = generateDynamicPositions(scaleNotes);
         } else {
-            let pairVal = document.getElementById('stringPairSelect').value.split(',').map(Number);
-            selectedPair = pairVal;
-            generatedPositions = generatePairDrillPositions();
+            // Unified Drill Logic
+            let selectorId = '';
+            if (exerciseMode === 'pair_drill') selectorId = 'stringPairSelect';
+            else if (exerciseMode === 'triplet_drill') selectorId = 'stringTripletSelect';
+            else if (exerciseMode === 'quad_drill') selectorId = 'stringQuadSelect';
+            else if (exerciseMode === 'quint_drill') selectorId = 'stringQuintSelect';
+
+            let val = document.getElementById(selectorId).value.split(',').map(Number);
+            selectedStrings = val;
+            generatedPositions = generateSequenceDrillPositions();
         }
         
         if (!isMultiMode || activeAnchors.size === 0) {
@@ -788,6 +786,7 @@
             svg.appendChild(line);
         }
 
+        // Ghost notes: Show only on selected strings for drills
         if (exerciseMode === 'scale') {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
@@ -798,7 +797,7 @@
                 }
             }
         } else {
-            selectedPair.forEach(s => {
+            selectedStrings.forEach(s => {
                 for (let f = 0; f <= FRETS; f++) {
                     let val = getNoteValue(s, f);
                     if (scaleNotes.includes(val)) {
@@ -900,28 +899,21 @@
         svg.appendChild(g);
     }
 
-    // --- VECTOR ZOOM ENGINE (ViewBox Manipulation) ---
+    // --- VECTOR ZOOM ENGINE ---
     const zoomContainer = document.getElementById('zoomContainer');
     const svgElement = document.getElementById('fretboard');
 
-    // Current ViewBox State
     let viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H };
-    
-    // Limits
     const MAX_W = BASE_W;
-    const MIN_W = BASE_W / 4; // Max 4x zoom
+    const MIN_W = BASE_W / 4; 
     
     function setViewBox() {
-        // Constraints Check
         if (viewBox.w > MAX_W) viewBox.w = MAX_W;
         if (viewBox.w < MIN_W) viewBox.w = MIN_W;
         if (viewBox.h > BASE_H) viewBox.h = BASE_H;
         
-        // Keep Ratio locked (width drives height)
-        // Ratio = 1650 / 240 = 6.875
         viewBox.h = viewBox.w * (BASE_H / BASE_W);
 
-        // Pan Constraints
         if (viewBox.x < 0) viewBox.x = 0;
         if (viewBox.y < 0) viewBox.y = 0;
         if (viewBox.x + viewBox.w > BASE_W) viewBox.x = BASE_W - viewBox.w;
@@ -935,7 +927,6 @@
         setViewBox();
     }
 
-    // --- Touch Logic ---
     let isPanning = false;
     let startX = 0;
     let startY = 0;
@@ -955,8 +946,6 @@
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         
-        // Convert screen pixels to SVG units
-        // Ratio = Current ViewBox Width / Container CSS Width
         const containerW = zoomContainer.clientWidth;
         const ratio = viewBox.w / containerW;
 
@@ -978,7 +967,6 @@
         zoomContainer.style.cursor = 'grab';
     });
 
-    // Touch Support
     zoomContainer.addEventListener('touchstart', e => {
         if (e.touches.length === 1) {
             isPanning = true;
@@ -995,7 +983,7 @@
     });
 
     zoomContainer.addEventListener('touchmove', e => {
-        e.preventDefault(); // Stop page scrolling
+        e.preventDefault(); 
         
         if (e.touches.length === 1 && isPanning) {
             const dx = e.touches[0].clientX - startX;
@@ -1016,18 +1004,11 @@
                 e.touches[0].clientY - e.touches[1].clientY
             );
             
-            // Zoom Factor
             const zoomChange = initialPinchDist / dist; 
             const newW = initialViewBoxW * zoomChange;
 
-            // Simple Center Zoom approximation for smoothness
-            // Calculate center shift later if needed, now keeping left-top stable logic for stability
-            // Or better: zoom towards center
-            
             const oldW = viewBox.w;
             viewBox.w = newW;
-            
-            // Adjust X to zoom into center roughly
             const diffW = oldW - viewBox.w;
             viewBox.x += diffW / 2;
             
@@ -1039,40 +1020,33 @@
         isPanning = false;
     });
 
-    // Mouse Wheel Zoom
     zoomContainer.addEventListener('wheel', e => {
         e.preventDefault();
         const zoomIntensity = 0.1;
-        const direction = e.deltaY > 0 ? 1 : -1; // Down = Zoom Out, Up = Zoom In
+        const direction = e.deltaY > 0 ? 1 : -1; 
         
         const oldW = viewBox.w;
         let newW = viewBox.w * (1 + direction * zoomIntensity);
         
-        // Constraint calculation handled in setViewBox, but need pre-calc for centering
         if (newW < MIN_W) newW = MIN_W;
         if (newW > MAX_W) newW = MAX_W;
 
-        // Mouse Point Zoom Logic
-        // Calculate mouse position relative to SVG
         const rect = zoomContainer.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left; // Pixel X in container
+        const offsetX = e.clientX - rect.left; 
         
-        const ratioW = oldW / rect.width; // SVG units per pixel
+        const ratioW = oldW / rect.width; 
         const mouseSVGX = viewBox.x + offsetX * ratioW;
         
         viewBox.w = newW;
         
-        // New Ratio
         const newRatioW = newW / rect.width;
-        // Shift viewBox.x so that mouseSVGX remains under mouse
         viewBox.x = mouseSVGX - offsetX * newRatioW;
 
         setViewBox();
     }, { passive: false });
 
     // Init
-    resetAndUpdate();
+    toggleExerciseMode();
 </script>
 </body>
 </html>
-
