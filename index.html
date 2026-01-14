@@ -2,10 +2,10 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bass Trainer: Pan & Zoom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bass Scale Trainer</title>
     <style>
-        /* --- CSS Variables (Permanent Night Mode) --- */
+        /* --- CSS Variables --- */
         :root {
             --bg-body: #121212;
             --bg-app: #1E1E1E;
@@ -41,7 +41,7 @@
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            overflow-x: hidden; /* 防止整體頁面橫向滾動 */
+            overflow-x: hidden;
         }
 
         .app-container {
@@ -53,7 +53,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            /* 防止 iOS safari 彈性滾動影響操作 */
             position: relative;
         }
 
@@ -62,7 +61,7 @@
             padding: 15px 20px;
             border-bottom: 1px solid var(--fret-line);
             background: var(--bg-app);
-            z-index: 10; /* 確保 Header 在指板之上 */
+            z-index: 10;
             position: relative;
         }
 
@@ -112,7 +111,6 @@
             font-weight: bold;
         }
 
-        /* Highlight specific controls */
         #exerciseModeSelect, #stringPairSelect {
             border-color: var(--note-active);
             font-weight: bold;
@@ -194,19 +192,16 @@
             font-weight: 600;
         }
 
-        /* --- Fretboard (Updated for Zoom) --- */
+        /* --- Fretboard Container --- */
         .fretboard-wrapper {
             width: 100%;
-            /* 限制高度，避免 SVG 過大撐開版面，讓它變成可滾動視窗 */
             height: 60vh; 
             min-height: 300px;
             background: var(--bg-app);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* 改為 top align */
-            overflow: hidden; /* 隱藏溢出的 SVG */
+            /* 改為 relative，不再需要 transform layer */
             position: relative;
-            touch-action: none; /* 關鍵：禁止瀏覽器預設的滾動與縮放，交給 JS 處理 */
+            overflow: hidden;
+            touch-action: none; /* 禁止瀏覽器預設滾動，完全接管 */
             cursor: grab;
         }
         
@@ -214,18 +209,11 @@
             cursor: grabbing;
         }
 
-        /* 這是實際被縮放的容器 */
-        .fretboard-transform-layer {
-            transform-origin: 0 0;
-            width: 100%;
-            will-change: transform;
-        }
-
         svg {
             display: block;
             width: 100%; 
-            height: auto;
-            /* 移除 max-width 限制，讓它可以自由縮放 */
+            height: 100%; /* SVG 佔滿容器，內容由 viewBox 控制 */
+            pointer-events: none; /* 讓事件穿透到 wrapper 處理 */
         }
 
         /* Legend */
@@ -249,12 +237,14 @@
             font-weight: bold; 
             font-size: 10px; 
             pointer-events: none; 
+            /* 讓文字在縮放時保持清晰 */
+            text-rendering: geometricPrecision; 
         }
 
-        /* Reset Button Overlay */
+        /* Reset Button */
         .reset-zoom-btn {
             position: absolute;
-            bottom: 60px; /* Legend height approx */
+            bottom: 60px;
             right: 20px;
             background: rgba(0,0,0,0.6);
             color: white;
@@ -264,9 +254,8 @@
             font-size: 0.8rem;
             cursor: pointer;
             z-index: 20;
-            opacity: 0.8;
         }
-        .reset-zoom-btn:hover { opacity: 1; }
+        .reset-zoom-btn:hover { background: var(--btn-active-bg); }
 
     </style>
 </head>
@@ -275,7 +264,7 @@
     <div class="app-container">
         <div class="header-section">
             <div class="header-top">
-                <h1>Bass Trainer v17 (Zoomable)</h1>
+                <h1>Bass Scale Trainer</h1>
                 <div class="switches-area">
                     <label class="toggle-container">
                         <input type="checkbox" id="multiModeCheck" onchange="toggleMultiMode()">
@@ -355,12 +344,10 @@
         <div class="pos-buttons-container" id="posBtnContainer"></div>
 
         <div class="fretboard-wrapper" id="zoomContainer">
-            <div class="fretboard-transform-layer" id="zoomLayer">
-                <svg id="fretboard" viewBox="0 0 1650 240" preserveAspectRatio="xMidYMid meet">
-                </svg>
-            </div>
+            <svg id="fretboard" viewBox="0 0 1650 240" preserveAspectRatio="xMidYMid meet">
+            </svg>
         </div>
-        <button class="reset-zoom-btn" onclick="resetZoom()">Reset View</button>
+        <button class="reset-zoom-btn" onclick="resetView()">Reset View</button>
 
         <div class="legend">
             <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音 (Root)</div>
@@ -374,36 +361,31 @@
     const TUNING = [7, 2, 9, 4, 11]; // G, D, A, E, B
     const STRINGS = 5;
 
+    // SVG Base Dimensions
+    const BASE_W = 1650;
+    const BASE_H = 240;
     const X_START = 50;
     const Y_START = 30;
     const FRET_WIDTH = 65;
     const STRING_GAP = 40;
 
-    // --- ENHARMONIC HANDLING ---
     const NOTES_FLAT =  ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
     const NOTES_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
     const SCALES = {
-        // Scales
         'major':    [0, 2, 4, 5, 7, 9, 11],
         'minor':    [0, 2, 3, 5, 7, 8, 10],
         'maj_pent': [0, 2, 4, 7, 9],
         'min_pent': [0, 3, 5, 7, 10],
-        
-        // Triads
         'maj_triad': [0, 4, 7],
         'min_triad': [0, 3, 7],
         'aug_triad': [0, 4, 8],
         'dim_triad': [0, 3, 6],
-
-        // 7th Chords
         'maj7':     [0, 4, 7, 11],
         'min7':     [0, 3, 7, 10],
         'dom7':     [0, 4, 7, 10],
         'm7b5':     [0, 3, 6, 10],
         'dim7':     [0, 3, 6, 9],
-
-        // Extended Chords
         'maj9':     [0, 2, 4, 7, 11],
         'min9':     [0, 2, 3, 7, 10],
         'dom9':     [0, 2, 4, 7, 10],
@@ -412,26 +394,19 @@
     };
 
     const INTERVAL_NAMES = {
-        // Scales
         'major':    ['R', '2', '3', '4', '5', '6', '7'],
         'minor':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
         'maj_pent': ['R', '2', '3', '5', '6'],
         'min_pent': ['R', 'b3', '4', '5', 'b7'],
-        
-        // Triads
         'maj_triad': ['R', '3', '5'],
         'min_triad': ['R', 'b3', '5'],
         'aug_triad': ['R', '3', '#5'],
         'dim_triad': ['R', 'b3', 'b5'],
-
-        // 7th Chords
         'maj7':     ['R', '3', '5', '7'],
         'min7':     ['R', 'b3', '5', 'b7'],
         'dom7':     ['R', '3', '5', 'b7'],
         'm7b5':     ['R', 'b3', 'b5', 'b7'],
         'dim7':     ['R', 'b3', 'b5', 'bb7'],
-
-        // Extended
         'maj9':     ['R', '9', '3', '5', '7'],
         'min9':     ['R', '9', 'b3', '5', 'b7'],
         'dom9':     ['R', '9', '3', '5', 'b7'],
@@ -447,7 +422,6 @@
         '5': '純5', '#5': '增5',
         'b6': '小6', '6': '大6',
         'b7': '小7', 'bb7': '減7', '7': '大7',
-        // Extensions
         '9': '大9', 'b9': '小9', '#9': '增9',
         '11': '純11', '#11': '增11',
         '13': '大13', 'b13': '小13'
@@ -527,8 +501,6 @@
         return SOLFEGE_MAP[interval] || interval || "?";
     }
 
-    // --- Generator Logic ---
-
     function generateDynamicPositions(scaleNotes) {
         let positions = [];
         let bStringBase = TUNING[4]; 
@@ -560,7 +532,8 @@
         let sHigh = Math.min(...selectedPair);
         let sLow = Math.max(...selectedPair);
 
-        for (let f = 0; f <= 15; f++) {
+        // Fill to 24 Frets
+        for (let f = 0; f <= FRETS; f++) {
             let noteVal = getNoteValue(sLow, f);
             let scaleIdx = scaleNotes.indexOf(noteVal); 
 
@@ -569,7 +542,9 @@
                 const findFret = (s, startFret, targetDegreeIdx) => {
                     let targetVal = scaleNotes[targetDegreeIdx % 7];
                     for(let i=0; i<6; i++) {
-                        if (getNoteValue(s, startFret+i) === targetVal) return startFret+i;
+                        let tryFret = startFret + i;
+                        if (tryFret > FRETS) continue;
+                        if (getNoteValue(s, tryFret) === targetVal) return tryFret;
                     }
                     return -1;
                 };
@@ -579,7 +554,7 @@
                 
                 for(let i=0; i<3; i++) {
                     let fret = findFret(sLow, (i===0?f:currentFret), scaleIdx + i);
-                    if(fret === -1 || fret > FRETS) { validSequence = false; break; }
+                    if(fret === -1) { validSequence = false; break; }
                     stepNotes.push({ s: sLow, fret: fret, val: getNoteValue(sLow, fret) });
                     currentFret = fret;
                 }
@@ -590,7 +565,7 @@
                 if (validSequence) {
                     for(let i=0; i<3; i++) {
                         let fret = findFret(sHigh, (i===0?highStringStartSearch:currentFret), scaleIdx + 3 + i);
-                        if(fret === -1 || fret > FRETS) { validSequence = false; break; }
+                        if(fret === -1) { validSequence = false; break; }
                         stepNotes.push({ s: sHigh, fret: fret, val: getNoteValue(sHigh, fret) });
                         currentFret = fret;
                     }
@@ -771,7 +746,6 @@
         drawFretboard(scaleNotes);
     }
 
-    // --- Drawing ---
     function drawFretboard(scaleNotes) {
         const svg = document.getElementById('fretboard');
         svg.innerHTML = '';
@@ -926,112 +900,178 @@
         svg.appendChild(g);
     }
 
-    // --- PAN & ZOOM LOGIC ---
-    let zoomState = {
-        scale: 1,
-        panning: false,
-        pointX: 0,
-        pointY: 0,
-        startX: 0,
-        startY: 0,
-        initialDist: 0,
-        lastScale: 1
-    };
+    // --- VECTOR ZOOM ENGINE (ViewBox Manipulation) ---
+    const zoomContainer = document.getElementById('zoomContainer');
+    const svgElement = document.getElementById('fretboard');
 
-    const container = document.getElementById('zoomContainer');
-    const zoomLayer = document.getElementById('zoomLayer');
+    // Current ViewBox State
+    let viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H };
+    
+    // Limits
+    const MAX_W = BASE_W;
+    const MIN_W = BASE_W / 4; // Max 4x zoom
+    
+    function setViewBox() {
+        // Constraints Check
+        if (viewBox.w > MAX_W) viewBox.w = MAX_W;
+        if (viewBox.w < MIN_W) viewBox.w = MIN_W;
+        if (viewBox.h > BASE_H) viewBox.h = BASE_H;
+        
+        // Keep Ratio locked (width drives height)
+        // Ratio = 1650 / 240 = 6.875
+        viewBox.h = viewBox.w * (BASE_H / BASE_W);
 
-    function setTransform() {
-        zoomLayer.style.transform = `translate(${zoomState.pointX}px, ${zoomState.pointY}px) scale(${zoomState.scale})`;
+        // Pan Constraints
+        if (viewBox.x < 0) viewBox.x = 0;
+        if (viewBox.y < 0) viewBox.y = 0;
+        if (viewBox.x + viewBox.w > BASE_W) viewBox.x = BASE_W - viewBox.w;
+        if (viewBox.y + viewBox.h > BASE_H) viewBox.y = BASE_H - viewBox.h;
+
+        svgElement.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
     }
 
-    function resetZoom() {
-        zoomState = { scale: 1, panning: false, pointX: 0, pointY: 0, startX: 0, startY: 0, initialDist: 0, lastScale: 1 };
-        setTransform();
+    function resetView() {
+        viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H };
+        setViewBox();
     }
 
-    // Touch Events
-    container.addEventListener('touchstart', (e) => {
+    // --- Touch Logic ---
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+    let initialPinchDist = 0;
+    let initialViewBoxW = 0;
+
+    zoomContainer.addEventListener('mousedown', e => {
+        isPanning = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        zoomContainer.style.cursor = 'grabbing';
+    });
+
+    zoomContainer.addEventListener('mousemove', e => {
+        if (!isPanning) return;
+        e.preventDefault();
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        // Convert screen pixels to SVG units
+        // Ratio = Current ViewBox Width / Container CSS Width
+        const containerW = zoomContainer.clientWidth;
+        const ratio = viewBox.w / containerW;
+
+        viewBox.x -= dx * ratio;
+        viewBox.y -= dy * ratio;
+
+        startX = e.clientX;
+        startY = e.clientY;
+        setViewBox();
+    });
+
+    zoomContainer.addEventListener('mouseup', () => {
+        isPanning = false;
+        zoomContainer.style.cursor = 'grab';
+    });
+    
+    zoomContainer.addEventListener('mouseleave', () => {
+        isPanning = false;
+        zoomContainer.style.cursor = 'grab';
+    });
+
+    // Touch Support
+    zoomContainer.addEventListener('touchstart', e => {
         if (e.touches.length === 1) {
-            zoomState.panning = true;
-            zoomState.startX = e.touches[0].clientX - zoomState.pointX;
-            zoomState.startY = e.touches[0].clientY - zoomState.pointY;
+            isPanning = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
         } else if (e.touches.length === 2) {
-            zoomState.panning = false;
-            zoomState.initialDist = Math.hypot(
+            isPanning = false;
+            initialPinchDist = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
             );
-            zoomState.lastScale = zoomState.scale;
+            initialViewBoxW = viewBox.w;
         }
     });
 
-    container.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // Prevent standard scroll
+    zoomContainer.addEventListener('touchmove', e => {
+        e.preventDefault(); // Stop page scrolling
+        
+        if (e.touches.length === 1 && isPanning) {
+            const dx = e.touches[0].clientX - startX;
+            const dy = e.touches[0].clientY - startY;
+            
+            const containerW = zoomContainer.clientWidth;
+            const ratio = viewBox.w / containerW;
 
-        if (e.touches.length === 1 && zoomState.panning) {
-            zoomState.pointX = e.touches[0].clientX - zoomState.startX;
-            zoomState.pointY = e.touches[0].clientY - zoomState.startY;
-            setTransform();
+            viewBox.x -= dx * ratio;
+            viewBox.y -= dy * ratio;
+            
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            setViewBox();
         } else if (e.touches.length === 2) {
             const dist = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
             );
-            const ratio = dist / zoomState.initialDist;
-            let newScale = zoomState.lastScale * ratio;
             
-            // Limits
-            newScale = Math.min(Math.max(0.5, newScale), 4);
+            // Zoom Factor
+            const zoomChange = initialPinchDist / dist; 
+            const newW = initialViewBoxW * zoomChange;
+
+            // Simple Center Zoom approximation for smoothness
+            // Calculate center shift later if needed, now keeping left-top stable logic for stability
+            // Or better: zoom towards center
             
-            zoomState.scale = newScale;
-            setTransform();
+            const oldW = viewBox.w;
+            viewBox.w = newW;
+            
+            // Adjust X to zoom into center roughly
+            const diffW = oldW - viewBox.w;
+            viewBox.x += diffW / 2;
+            
+            setViewBox();
         }
     });
 
-    container.addEventListener('touchend', () => {
-        zoomState.panning = false;
+    zoomContainer.addEventListener('touchend', () => {
+        isPanning = false;
     });
 
-    // Mouse Events (For Desktop testing)
-    container.addEventListener('mousedown', (e) => {
-        zoomState.panning = true;
-        zoomState.startX = e.clientX - zoomState.pointX;
-        zoomState.startY = e.clientY - zoomState.pointY;
-        container.style.cursor = 'grabbing';
-    });
-
-    container.addEventListener('mousemove', (e) => {
-        if (!zoomState.panning) return;
+    // Mouse Wheel Zoom
+    zoomContainer.addEventListener('wheel', e => {
         e.preventDefault();
-        zoomState.pointX = e.clientX - zoomState.startX;
-        zoomState.pointY = e.clientY - zoomState.startY;
-        setTransform();
-    });
-
-    container.addEventListener('mouseup', () => {
-        zoomState.panning = false;
-        container.style.cursor = 'grab';
-    });
-
-    container.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const xs = (e.clientX - zoomState.pointX) / zoomState.scale;
-        const ys = (e.clientY - zoomState.pointY) / zoomState.scale;
-        const delta = -e.deltaY;
+        const zoomIntensity = 0.1;
+        const direction = e.deltaY > 0 ? 1 : -1; // Down = Zoom Out, Up = Zoom In
         
-        let newScale = delta > 0 ? zoomState.scale * 1.1 : zoomState.scale / 1.1;
-        newScale = Math.min(Math.max(0.5, newScale), 4);
+        const oldW = viewBox.w;
+        let newW = viewBox.w * (1 + direction * zoomIntensity);
+        
+        // Constraint calculation handled in setViewBox, but need pre-calc for centering
+        if (newW < MIN_W) newW = MIN_W;
+        if (newW > MAX_W) newW = MAX_W;
 
-        // Simple center zoom logic
-        zoomState.pointX = e.clientX - xs * newScale;
-        zoomState.pointY = e.clientY - ys * newScale;
-        zoomState.scale = newScale;
+        // Mouse Point Zoom Logic
+        // Calculate mouse position relative to SVG
+        const rect = zoomContainer.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left; // Pixel X in container
+        
+        const ratioW = oldW / rect.width; // SVG units per pixel
+        const mouseSVGX = viewBox.x + offsetX * ratioW;
+        
+        viewBox.w = newW;
+        
+        // New Ratio
+        const newRatioW = newW / rect.width;
+        // Shift viewBox.x so that mouseSVGX remains under mouse
+        viewBox.x = mouseSVGX - offsetX * newRatioW;
 
-        setTransform();
-    });
+        setViewBox();
+    }, { passive: false });
 
-    toggleExerciseMode(); 
+    // Init
+    resetAndUpdate();
 </script>
 </body>
 </html>
