@@ -111,12 +111,7 @@
             font-weight: bold;
         }
 
-        /* Highlight exercise inputs */
-        #exerciseModeSelect, 
-        #stringPairSelect, 
-        #stringTripletSelect, 
-        #stringQuadSelect, 
-        #stringQuintSelect {
+        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect {
             border-color: var(--note-active);
             font-weight: bold;
         }
@@ -169,6 +164,7 @@
             border-bottom: 1px solid var(--fret-line);
             scrollbar-width: none;
             z-index: 10;
+            scroll-behavior: smooth; /* Smooth scrolling for JS */
         }
         .pos-buttons-container::-webkit-scrollbar { display: none; }
 
@@ -195,6 +191,7 @@
             color: var(--btn-active-text);
             border-color: var(--btn-active-bg);
             font-weight: 600;
+            transform: scale(1.05); /* Slight pop effect */
         }
 
         /* --- Fretboard Wrapper --- */
@@ -262,6 +259,14 @@
         
         .hidden { display: none !important; }
 
+        /* Keyboard hint */
+        .kbd-hint {
+            font-size: 0.7rem;
+            color: var(--text-sub);
+            margin-left: 10px;
+            opacity: 0.7;
+        }
+
     </style>
 </head>
 <body>
@@ -271,6 +276,7 @@
             <div class="header-top">
                 <h1>Bass Scale Trainer</h1>
                 <div class="switches-area">
+                    <span class="kbd-hint">Use ← → keys</span>
                     <label class="toggle-container">
                         <input type="checkbox" id="multiModeCheck" onchange="toggleMultiMode()">
                         <div class="toggle-switch"></div>
@@ -327,7 +333,7 @@
                     </select>
 
                     <select id="stringQuadSelect" class="hidden" onchange="resetAndUpdate()">
-                        <option value="0,1,2,3">練習: G-D-A-E (Standard 4)</option>
+                        <option value="0,1,2,3">練習: E-A-D-G (Standard 4)</option>
                         <option value="1,2,3,4" selected>練習: B-E-A-D (Low 4)</option>
                     </select>
 
@@ -479,7 +485,6 @@
 
     /**
      * UNIFIED DRILL GENERATOR
-     * Handles 2, 3, 4, and 5 string sequences dynamically.
      */
     function generateSequenceDrillPositions() {
         let positions = [];
@@ -488,7 +493,6 @@
         let modeNames = SCALE_MODE_NAMES['major'];
 
         // Sort selected strings High Index (Low Pitch) -> Low Index (High Pitch)
-        // e.g. [4, 3, 2] = B, E, A
         let sortedStrings = [...selectedStrings].sort((a,b) => b-a);
 
         // Iterate through frets to find starting points on the lowest string
@@ -501,19 +505,14 @@
                 let stepNotes = [];
                 let validSequence = true;
                 let currentScaleStep = scaleIdx;
-                let currentFret = f; // Start search pointer
-
+                
                 // Loop through each string in the sequence
                 for (let i = 0; i < sortedStrings.length; i++) {
                     let s = sortedStrings[i];
+                    // Standard 3NPS logic: usually stays near anchor fret
+                    let searchStart = f; 
                     
-                    // Reset search for higher strings roughly to original fret 
-                    // (Standard 3NPS box shape logic stays near anchor)
-                    let searchStart = (i === 0) ? f : f; 
-                    
-                    // For each string, find 3 notes (3NPS)
                     for (let n = 0; n < 3; n++) {
-                        // Look for the specific scale degree
                         let targetVal = scaleNotes[currentScaleStep % 7];
                         let foundFret = -1;
 
@@ -533,11 +532,7 @@
                         }
 
                         stepNotes.push({ s: s, fret: foundFret, val: getNoteValue(s, foundFret) });
-                        
-                        // Prepare for next note
                         currentScaleStep++;
-                        // If we found a note, next search on same string should start there (or near)
-                        // But for simplicity in 3NPS, finding next scale degree usually works forward
                     }
                     if (!validSequence) break;
                 }
@@ -654,7 +649,6 @@
             'stringQuintSelect'
         ];
         
-        // Hide all
         selectors.forEach(id => document.getElementById(id).classList.add('hidden'));
 
         if (exerciseMode === 'scale') {
@@ -685,7 +679,6 @@
             const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
             generatedPositions = generateDynamicPositions(scaleNotes);
         } else {
-            // Unified Drill Logic
             let selectorId = '';
             if (exerciseMode === 'pair_drill') selectorId = 'stringPairSelect';
             else if (exerciseMode === 'triplet_drill') selectorId = 'stringTripletSelect';
@@ -697,6 +690,7 @@
             generatedPositions = generateSequenceDrillPositions();
         }
         
+        // Reset to first position if needed, or keep active if valid
         if (!isMultiMode || activeAnchors.size === 0) {
             activeAnchors.clear();
             if(generatedPositions.length > 0) activeAnchors.add(generatedPositions[0].id);
@@ -728,6 +722,7 @@
         generatedPositions.forEach((pos, idx) => {
             let btn = document.createElement('button');
             btn.className = 'pos-btn';
+            btn.dataset.id = pos.id; // Store ID for auto-scroll logic
             if (activeAnchors.has(pos.id)) btn.classList.add('active');
             
             if (exerciseMode === 'scale') {
@@ -744,6 +739,7 @@
         drawFretboard(scaleNotes);
     }
 
+    // --- Drawing ---
     function drawFretboard(scaleNotes) {
         const svg = document.getElementById('fretboard');
         svg.innerHTML = '';
@@ -786,7 +782,6 @@
             svg.appendChild(line);
         }
 
-        // Ghost notes: Show only on selected strings for drills
         if (exerciseMode === 'scale') {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
@@ -853,7 +848,6 @@
         circle.setAttribute("cy", cy);
         
         let isRoot = (val === parseInt(currentRoot));
-        
         let intervalLabel = getIntervalLabel(val);
         let isExtension = ['9', '11', '#11', '13', 'b9', '#9', 'b13'].includes(intervalLabel);
 
@@ -1044,6 +1038,46 @@
 
         setViewBox();
     }, { passive: false });
+
+    // --- KEYBOARD NAVIGATION ---
+    document.addEventListener('keydown', (e) => {
+        if (generatedPositions.length === 0) return;
+
+        let currentId = -1;
+        if (activeAnchors.size > 0) {
+            currentId = Array.from(activeAnchors)[0];
+        }
+
+        let currentIndex = generatedPositions.findIndex(p => p.id === currentId);
+        let newIndex = currentIndex;
+
+        if (e.key === 'ArrowLeft') {
+            newIndex = currentIndex - 1;
+            if (newIndex < 0) newIndex = generatedPositions.length - 1;
+        } else if (e.key === 'ArrowRight') {
+            newIndex = currentIndex + 1;
+            if (newIndex >= generatedPositions.length) newIndex = 0;
+        } else {
+            return; 
+        }
+
+        if (newIndex !== currentIndex && newIndex >= 0) {
+            const newPos = generatedPositions[newIndex];
+            activeAnchors.clear();
+            activeAnchors.add(newPos.id);
+            updateApp();
+            scrollToButton(newIndex);
+        }
+    });
+
+    function scrollToButton(index) {
+        const container = document.getElementById('posBtnContainer');
+        const buttons = container.getElementsByClassName('pos-btn');
+        if (buttons[index]) {
+            // center the button
+            buttons[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
 
     // Init
     toggleExerciseMode();
