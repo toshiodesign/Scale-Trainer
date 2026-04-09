@@ -29,6 +29,9 @@
             --btn-border: #444444;
             --btn-active-bg: #3498DB;
             --btn-active-text: #ffffff;
+            
+            --success-color: #2ECC71;
+            --error-color: #E74C3C;
         }
 
         body {
@@ -42,7 +45,6 @@
             justify-content: center;
             align-items: flex-start;
             overflow-x: hidden;
-            /* 鎖定全域縮放，只允許單指上下左右滾動 */
             touch-action: pan-x pan-y;
         }
 
@@ -51,10 +53,9 @@
             max-width: 1400px;
             display: flex;
             flex-direction: column;
-            gap: 25px; /* 模組之間的間距 */
+            gap: 25px; 
         }
 
-        /* --- 共用面板樣式 --- */
         .module-panel {
             background: var(--bg-app);
             border-radius: 12px;
@@ -94,28 +95,14 @@
         select:focus { border-color: var(--note-active); }
         select optgroup { background-color: var(--bg-app); color: var(--text-sub); }
 
-
-        /* =========================================
-           MODULE 1: FRETBOARD TRAINER
-        ========================================= */
-        .switches-area { display: flex; gap: 10px; align-items: center; }
-
-        .controls-row {
-            display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; margin-top: 12px;
-        }
-
-        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect, #chordTypeSelect, #arpeggioStringSelect {
-            border-color: var(--note-active);
-            font-weight: bold;
-        }
-
+        .hidden { display: none !important; }
+        
         .toggle-container {
             display: flex; align-items: center; gap: 6px;
             background: var(--bg-body); padding: 5px 12px;
             border-radius: 20px; font-size: 0.85rem; cursor: pointer;
             border: 1px solid var(--btn-border);
         }
-        
         .toggle-switch {
             position: relative; width: 36px; height: 18px;
             background-color: #555; border-radius: 20px; transition: 0.3s;
@@ -125,8 +112,15 @@
             width: 14px; height: 14px; background-color: white;
             border-radius: 50%; transition: 0.3s;
         }
-        #multiModeCheck:checked + .toggle-switch { background-color: var(--note-active); }
+        input[type="checkbox"]:checked + .toggle-switch { background-color: var(--note-active); }
         input[type="checkbox"]:checked + .toggle-switch::after { transform: translateX(18px); }
+
+        /* =========================================
+           MODULE 1: FRETBOARD TRAINER
+        ========================================= */
+        .switches-area { display: flex; gap: 10px; align-items: center; }
+        .controls-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; margin-top: 12px; }
+        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect, #chordTypeSelect, #arpeggioStringSelect { border-color: var(--note-active); font-weight: bold; }
 
         .pos-buttons-container {
             display: flex; gap: 8px; overflow-x: auto; padding: 12px 20px;
@@ -134,7 +128,6 @@
             scrollbar-width: none; scroll-behavior: smooth;
         }
         .pos-buttons-container::-webkit-scrollbar { display: none; }
-
         .pos-btn {
             white-space: nowrap; padding: 6px 14px; border: 1px solid var(--btn-border);
             background: var(--btn-bg); color: var(--text-sub); border-radius: 15px;
@@ -142,123 +135,94 @@
             display: flex; flex-direction: column; align-items: center; min-width: 80px;
         }
         .pos-btn span.mode-name { font-size: 0.7rem; opacity: 0.8; margin-top: 3px; }
-        .pos-btn.active {
-            background: var(--btn-active-bg); color: var(--btn-active-text);
-            border-color: var(--btn-active-bg); font-weight: 600; transform: scale(1.05);
-        }
+        .pos-btn.active { background: var(--btn-active-bg); color: var(--btn-active-text); border-color: var(--btn-active-bg); font-weight: 600; transform: scale(1.05); }
 
-        .fretboard-wrapper {
-            width: 100%; height: 50vh; min-height: 250px; background: var(--bg-app);
-            position: relative; overflow: hidden; touch-action: none; cursor: grab;
-        }
+        .fretboard-wrapper { width: 100%; height: 50vh; min-height: 250px; background: var(--bg-app); position: relative; overflow: hidden; touch-action: none; cursor: grab; }
         .fretboard-wrapper:active { cursor: grabbing; }
         svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 
-        .legend {
-            display: flex; gap: 15px; padding: 12px 20px; font-size: 0.8rem;
-            background: var(--bg-body); border-top: 1px solid var(--fret-line);
-            justify-content: center; flex-wrap: wrap; color: var(--text-sub);
-        }
+        .legend { display: flex; gap: 15px; padding: 12px 20px; font-size: 0.8rem; background: var(--bg-body); border-top: 1px solid var(--fret-line); justify-content: center; flex-wrap: wrap; color: var(--text-sub); }
         .legend-item { display: flex; align-items: center; gap: 6px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; }
         .note-text { font-family: inherit; font-weight: bold; font-size: 10px; }
 
-        .reset-zoom-btn {
-            position: absolute; bottom: 50px; right: 20px; background: rgba(0,0,0,0.6);
-            color: white; border: 1px solid var(--btn-border); padding: 6px 12px;
-            border-radius: 6px; font-size: 0.8rem; cursor: pointer; z-index: 20; transition: 0.2s;
-        }
+        .reset-zoom-btn { position: absolute; bottom: 50px; right: 20px; background: rgba(0,0,0,0.6); color: white; border: 1px solid var(--btn-border); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; z-index: 20; transition: 0.2s; }
         .reset-zoom-btn:hover { background: var(--note-active); border-color: var(--note-active); }
-        
-        .hidden { display: none !important; }
 
         /* =========================================
-           MODULE 2: RHYTHM TRAINER
+           MODULE 2: CHORD TONE TRAINER (NEW)
         ========================================= */
-        .rhythm-controls-top {
-            display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;
-            padding: 15px 20px; border-bottom: 1px solid var(--fret-line);
-            background: var(--bg-app);
-        }
+        .trainer-stage { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 25px; background: var(--bg-body); }
+        
+        .chord-display { display: flex; align-items: center; gap: 15px; }
+        .chord-nav-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .chord-nav-btn:hover { background: var(--note-active); border-color: var(--note-active); }
+        .current-chord-text { font-size: 2.5rem; font-weight: bold; color: var(--note-active); min-width: 120px; text-align: center; margin: 0; }
+        .chord-type-selector { font-size: 1.2rem; padding: 5px 10px; font-weight: bold; color: var(--text-main); background: var(--bg-app); border: 2px solid var(--btn-border); border-radius: 8px; text-align: center; }
 
+        .tone-boxes-container { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 500px; }
+        .tone-box-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; min-width: 70px; }
+        .tone-box-label { font-size: 0.85rem; color: var(--text-sub); font-weight: bold; }
+        
+        .tone-box { 
+            width: 100%; aspect-ratio: 1; border-radius: 12px; border: 2px solid var(--btn-border);
+            background: var(--bg-app); display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 1.5rem; font-weight: bold; color: var(--text-main); cursor: pointer; transition: 0.2s; position: relative;
+        }
+        .tone-box.root-box { background: var(--btn-bg); color: var(--note-root); border-color: var(--btn-border); cursor: default; }
+        .tone-box.active { border-color: var(--note-active); box-shadow: 0 0 15px rgba(52, 152, 219, 0.4); transform: translateY(-3px); }
+        .tone-box.success { border-color: var(--success-color); color: var(--success-color); background: rgba(46, 204, 113, 0.1); }
+        .tone-box.error { border-color: var(--error-color); color: var(--error-color); background: rgba(231, 76, 60, 0.1); animation: shake 0.4s; }
+        .tone-box .hint-text { position: absolute; bottom: 5px; font-size: 0.8rem; color: var(--success-color); opacity: 0; transition: 0.3s; }
+        .tone-box.error.show-hint .hint-text { opacity: 1; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        .keyboard-panel { background: var(--bg-app); border: 1px solid var(--btn-border); border-radius: 12px; padding: 15px; width: 100%; max-width: 500px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+        .key-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-main); border-radius: 8px; padding: 12px 0; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.1s; }
+        .key-btn:active { background: var(--note-active); border-color: var(--note-active); transform: scale(0.95); }
+
+        .submit-btn { width: 100%; max-width: 500px; padding: 15px; border-radius: 12px; background: var(--note-active); color: white; font-size: 1.2rem; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; margin-top: 10px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); }
+        .submit-btn:hover { background: #2980B9; transform: translateY(-2px); }
+
+        /* =========================================
+           MODULE 3: RHYTHM TRAINER
+        ========================================= */
+        .rhythm-controls-top { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; padding: 15px 20px; border-bottom: 1px solid var(--fret-line); background: var(--bg-app); }
         .rc-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .rc-label { font-size: 0.8rem; color: var(--text-sub); font-weight: normal; }
         .val-display { font-size: 0.9rem; font-weight: bold; color: var(--note-active); }
 
-        /* 滑桿統一化 */
         input[type="range"] { -webkit-appearance: none; width: 100px; background: transparent; height: 20px; }
         input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: var(--btn-border); border-radius: 2px;}
-        input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; height: 16px; width: 16px; 
-            border-radius: 50%; background: var(--note-active); margin-top: -6px; cursor: pointer; 
-        }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--note-active); margin-top: -6px; cursor: pointer; }
 
-        /* 舞台區 (底色加深創造空間感) */
-        .rhythm-stage {
-            display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center;
-            background: var(--bg-body); padding: 30px 20px; min-height: 140px;
-        }
-
-        /* 節奏卡片 */
-        .beat-card {
-            border: 2px solid var(--btn-border); border-radius: 8px; width: 100px; height: 100px;
-            display: flex; justify-content: center; align-items: center; transition: 0.15s ease;
-            background: var(--btn-bg);
-        }
-        .beat-card.active {
-            border-color: var(--note-active); transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); background: var(--bg-app);
-        }
+        .rhythm-stage { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center; background: var(--bg-body); padding: 30px 20px; min-height: 140px; }
+        .beat-card { border: 2px solid var(--btn-border); border-radius: 8px; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; transition: 0.15s ease; background: var(--btn-bg); }
+        .beat-card.active { border-color: var(--note-active); transform: scale(1.05); box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); background: var(--bg-app); }
         .beat-card.changing { animation: cardUpdate 0.2s; }
         @keyframes cardUpdate { 0% { opacity: 0.5; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
-        
         .beat-card .svg-container { width: 70%; height: 70%; opacity: 0.6; transition: 0.15s; }
         .beat-card.active .svg-container { opacity: 1; }
         .beat-card svg { width: 100%; height: 100%; fill: var(--text-main); }
 
-        /* 播放控制列 */
-        .playback-bar {
-            display: flex; align-items: center; justify-content: center; gap: 30px;
-            background: var(--bg-app); padding: 15px; border-top: 1px solid var(--fret-line); border-bottom: 1px solid var(--fret-line);
-        }
-
-        .btn-circle {
-            width: 55px; height: 55px; border-radius: 50%; background: var(--btn-bg);
-            border: 2px solid var(--btn-border); color: var(--text-main);
-            cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s;
-        }
+        .playback-bar { display: flex; align-items: center; justify-content: center; gap: 30px; background: var(--bg-app); padding: 15px; border-top: 1px solid var(--fret-line); border-bottom: 1px solid var(--fret-line); }
+        .btn-circle { width: 55px; height: 55px; border-radius: 50%; background: var(--btn-bg); border: 2px solid var(--btn-border); color: var(--text-main); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .btn-circle:hover { border-color: var(--note-active); color: var(--note-active); }
-        .btn-circle.playing {
-            border-color: var(--note-active); color: var(--btn-active-text);
-            background: var(--note-active); box-shadow: 0 0 15px rgba(52, 152, 219, 0.4);
-        }
-
-        .btn-pill {
-            padding: 10px 24px; border-radius: 25px; border: 1px solid var(--btn-border);
-            background: var(--btn-bg); color: var(--text-sub); font-size: 0.85rem; font-weight: bold;
-            cursor: pointer; transition: 0.2s; 
-        }
+        .btn-circle.playing { border-color: var(--note-active); color: var(--btn-active-text); background: var(--note-active); box-shadow: 0 0 15px rgba(52, 152, 219, 0.4); }
+        .btn-pill { padding: 10px 24px; border-radius: 25px; border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--text-sub); font-size: 0.85rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-pill:hover { border-color: var(--note-active); color: var(--text-main); }
-        .btn-pill.active {
-            background: var(--btn-active-bg); color: var(--btn-active-text); border-color: var(--btn-active-bg);
-        }
+        .btn-pill.active { background: var(--btn-active-bg); color: var(--btn-active-text); border-color: var(--btn-active-bg); }
 
-        /* 節奏圖庫面板 */
         .library-panel { background: var(--bg-app); padding: 20px; }
         .library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .library-title { font-size: 1rem; font-weight: bold; color: var(--text-main); }
-        
         .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; transition: 0.3s; }
         .pattern-grid.collapsed { max-height: 0; opacity: 0; margin: 0; overflow: hidden; }
-        
-        .pattern-item {
-            aspect-ratio: 1; border: 1px solid var(--btn-border); background: var(--btn-bg); border-radius: 6px;
-            cursor: pointer; display: flex; justify-content: center; align-items: center; padding: 6px; opacity: 0.5; transition: 0.2s;
-        }
+        .pattern-item { aspect-ratio: 1; border: 1px solid var(--btn-border); background: var(--btn-bg); border-radius: 6px; cursor: pointer; display: flex; justify-content: center; align-items: center; padding: 6px; opacity: 0.5; transition: 0.2s; }
         .pattern-item:hover { border-color: var(--text-sub); opacity: 0.8; }
         .pattern-item.selected { border-color: var(--note-active); opacity: 1; background: rgba(52, 152, 219, 0.15); box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);}
         .pattern-item svg { width: 100%; height: 100%; pointer-events: none; fill: var(--text-main); }
-
         .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--text-main); cursor: pointer; font-weight: bold; transition: 0.2s;}
         .btn-sm:hover { background: var(--note-active); border-color: var(--note-active); color: var(--btn-active-text);}
     </style>
@@ -327,6 +291,7 @@
                             <option value="dom7">Dom 7</option>
                             <option value="min7">m7</option>
                             <option value="m7b5">m7b5</option>
+                            <option value="aug7">Dom7#5</option>
                             <option value="dim7">dim7</option>
                             <option value="mM7">mM7</option>
                         </optgroup>
@@ -377,6 +342,71 @@
                 <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
                 <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>組成音</div>
                 <div class="legend-item"><span class="dot" style="background:var(--note-extension)"></span>特徵音</div>
+            </div>
+        </div>
+
+        <div class="module-panel">
+            <div class="header-section">
+                <div class="header-top">
+                    <h1>Chord Tone Training Pro</h1>
+                    <div class="switches-area">
+                        <select id="trainerSeqMode">
+                            <option value="chromatic">進行: 半音階</option>
+                            <option value="circle5ths">進行: 五度圈</option>
+                            <option value="random">進行: 隨機</option>
+                        </select>
+                        <label class="toggle-container">
+                            <input type="checkbox" id="trainerAccidentalToggle">
+                            <div class="toggle-switch"></div>
+                            <span>b / #</span>
+                        </label>
+                        <label class="toggle-container">
+                            <input type="checkbox" id="trainerTipsToggle" checked>
+                            <div class="toggle-switch"></div>
+                            <span>Tips</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="trainer-stage">
+                <div class="chord-display">
+                    <button class="chord-nav-btn" id="btnPrevRoot">&lt;</button>
+                    <h2 class="current-chord-text" id="displayRootName">C</h2>
+                    <select class="chord-type-selector" id="trainerChordType">
+                        <option value="maj7">Maj7</option>
+                        <option value="min7">m7</option>
+                        <option value="dom7">Dom7</option>
+                        <option value="m7b5">m7b5</option>
+                        <option value="aug7">Dom7#5</option>
+                        <option value="dim7">dim7</option>
+                    </select>
+                    <button class="chord-nav-btn" id="btnNextRoot">&gt;</button>
+                </div>
+
+                <div class="tone-boxes-container">
+                    <div class="tone-box-wrapper">
+                        <span class="tone-box-label">Root (I)</span>
+                        <div class="tone-box root-box" id="box0">C</div>
+                    </div>
+                    <div class="tone-box-wrapper">
+                        <span class="tone-box-label" id="lblBox1">3</span>
+                        <div class="tone-box input-box active" data-idx="1" id="box1"><span class="val"></span><span class="hint-text"></span></div>
+                    </div>
+                    <div class="tone-box-wrapper">
+                        <span class="tone-box-label" id="lblBox2">5</span>
+                        <div class="tone-box input-box" data-idx="2" id="box2"><span class="val"></span><span class="hint-text"></span></div>
+                    </div>
+                    <div class="tone-box-wrapper">
+                        <span class="tone-box-label" id="lblBox3">7</span>
+                        <div class="tone-box input-box" data-idx="3" id="box3"><span class="val"></span><span class="hint-text"></span></div>
+                    </div>
+                </div>
+
+                <div class="keyboard-panel" id="trainerKeyboard">
+                    </div>
+
+                <button class="submit-btn" id="btnTrainerSubmit">Submit & Map to Fretboard</button>
             </div>
         </div>
 

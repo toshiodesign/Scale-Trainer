@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'dom7':     [0, 4, 7, 10],
         'min7':     [0, 3, 7, 10],
         'm7b5':     [0, 3, 6, 10],
+        'aug7':     [0, 4, 8, 10], // 新增 Dom7#5
         'dim7':     [0, 3, 6, 9],
         'mM7':      [0, 3, 7, 11]
     };
@@ -47,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'dom7':     ['R', '3', '5', 'b7'],
         'min7':     ['R', 'b3', '5', 'b7'],
         'm7b5':     ['R', 'b3', 'b5', 'b7'],
+        'aug7':     ['R', '3', '#5', 'b7'], // 新增 Dom7#5
         'dim7':     ['R', 'b3', 'b5', 'bb7'],
         'mM7':      ['R', 'b3', '5', '7']
     };
@@ -60,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'dom7': { '1st': [[0,0], [0,4], [-1,2], [-2,0], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,2], [-2,0], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-3], [-2,0], [-3,-3]] },
         'min7': { '1st': [[0,0], [-1,-2], [-1,2], [-2,0], [-2,2]], '2nd': [[0,0], [0,3], [-1,2], [-2,0], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-3], [-2,0], [-3,-3]] },
         'm7b5': { '1st': [[0,0], [-1,-2], [-1,1], [-2,0], [-2,2]], '2nd': [[0,0], [0,3], [-1,1], [-2,0], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-4], [-2,0], [-3,-3]] },
+        'aug7': { '1st': [[0,0], [0,4], [-1,3], [-2,0], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,3], [-2,0], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-2], [-2,0], [-3,-3]] }, // 新增 Dom7#5
         'dim7': { '1st': [[0,0], [-1,-2], [-1,1], [-2,-1], [-2,2]], '2nd': [[0,0], [0,3], [-1,1], [-2,-1], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-4], [-2,-1], [-3,-3]] },
         'mM7': { '1st': [[0,0], [-1,-2], [-1,2], [-2,1], [-2,2]], '2nd': [[0,0], [0,3], [-1,2], [-2,1], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-3], [-3,-4], [-3,-3]] }
     };
@@ -91,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let generatedPositions = []; 
     let isFretboardMultiMode = false;
 
-    // Fretboard Selectors
     const exModeSel = document.getElementById('exerciseModeSelect');
     const keySel = document.getElementById('keySelect');
     const scaleSel = document.getElementById('scaleSelect');
@@ -429,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
         svg.appendChild(g);
     }
 
-    // SVG Zoom Engine
+    // Fretboard Zoom 
     const zoomContainer = document.getElementById('zoomContainer');
     const svgElement = document.getElementById('fretboard');
     let viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H };
@@ -446,10 +448,8 @@ document.addEventListener("DOMContentLoaded", () => {
         svgElement.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
     }
 
-    let isPanning = false, startX = 0, startY = 0, initialPinchDist = 0, initialViewBoxW = 0;
-    let lastTapTime = 0;
+    let isPanning = false, startX = 0, startY = 0, initialPinchDist = 0, initialViewBoxW = 0, lastTapTime = 0;
 
-    // 電腦版滑鼠事件
     zoomContainer.addEventListener('mousedown', e => { isPanning = true; startX = e.clientX; startY = e.clientY; zoomContainer.style.cursor = 'grabbing'; });
     zoomContainer.addEventListener('mousemove', e => {
         if (!isPanning) return; e.preventDefault();
@@ -470,95 +470,42 @@ document.addEventListener("DOMContentLoaded", () => {
         setViewBox();
     }, { passive: false });
 
-    document.getElementById('resetZoomBtn').addEventListener('click', () => {
-        viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H }; setViewBox();
-    });
+    document.getElementById('resetZoomBtn').addEventListener('click', () => { viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H }; setViewBox(); });
 
-    /* =========================================================
-       手機版 Touch 縮放與平移邏輯
-    ========================================================= */
-    function getTouchDistance(touches) {
-        return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-    }
-
+    function getTouchDistance(touches) { return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY); }
     zoomContainer.addEventListener('touchstart', e => {
         if (e.touches.length === 1) {
-            isPanning = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-
-            // 雙擊指板快速還原大小
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTapTime;
-            if (tapLength < 300 && tapLength > 0) {
-                viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H };
-                setViewBox();
-                e.preventDefault();
-            }
+            isPanning = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+            const currentTime = new Date().getTime(); const tapLength = currentTime - lastTapTime;
+            if (tapLength < 300 && tapLength > 0) { viewBox = { x: 0, y: 0, w: BASE_W, h: BASE_H }; setViewBox(); e.preventDefault(); }
             lastTapTime = currentTime;
-
         } else if (e.touches.length === 2) {
-            isPanning = false;
-            initialPinchDist = getTouchDistance(e.touches);
-            initialViewBoxW = viewBox.w;
+            isPanning = false; initialPinchDist = getTouchDistance(e.touches); initialViewBoxW = viewBox.w;
         }
     }, { passive: false });
-
     zoomContainer.addEventListener('touchmove', e => {
-        e.preventDefault(); // 阻止瀏覽器預設的滾動與縮放，將控制權留在指板內
-        
+        e.preventDefault(); 
         if (e.touches.length === 1 && isPanning) {
-            // 單指平移
             const ratio = viewBox.w / zoomContainer.clientWidth;
-            viewBox.x -= (e.touches[0].clientX - startX) * ratio;
-            viewBox.y -= (e.touches[0].clientY - startY) * ratio;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            setViewBox();
-            
+            viewBox.x -= (e.touches[0].clientX - startX) * ratio; viewBox.y -= (e.touches[0].clientY - startY) * ratio;
+            startX = e.touches[0].clientX; startY = e.touches[0].clientY; setViewBox();
         } else if (e.touches.length === 2) {
-            // 雙指縮放 (Pinch to Zoom)
             const currentDist = getTouchDistance(e.touches);
             if (initialPinchDist > 0) {
-                const scale = initialPinchDist / currentDist;
-                const oldW = viewBox.w;
-                
-                viewBox.w = initialViewBoxW * scale;
-                
-                if (viewBox.w < MIN_W) viewBox.w = MIN_W;
-                if (viewBox.w > MAX_W) viewBox.w = MAX_W;
-                
-                // 讓縮放盡量保持在畫面中央
-                viewBox.x += (oldW - viewBox.w) / 2;
-                viewBox.y += (oldW * (BASE_H / BASE_W) - viewBox.w * (BASE_H / BASE_W)) / 2;
-                
+                const scale = initialPinchDist / currentDist; const oldW = viewBox.w; viewBox.w = initialViewBoxW * scale;
+                if (viewBox.w < MIN_W) viewBox.w = MIN_W; if (viewBox.w > MAX_W) viewBox.w = MAX_W;
+                viewBox.x += (oldW - viewBox.w) / 2; viewBox.y += (oldW * (BASE_H / BASE_W) - viewBox.w * (BASE_H / BASE_W)) / 2;
                 setViewBox();
             }
         }
     }, { passive: false });
-
     zoomContainer.addEventListener('touchend', e => {
         if (e.touches.length < 2) initialPinchDist = 0;
-        
-        if (e.touches.length === 0) {
-            isPanning = false;
-        } else if (e.touches.length === 1) {
-            // 如果雙指放開一指，剩下的那指重新接管平移
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            isPanning = true;
-        }
+        if (e.touches.length === 0) isPanning = false;
+        else if (e.touches.length === 1) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; isPanning = true; }
     });
 
-    /* =========================================================
-       全域禁止雙指縮放 (阻擋 Safari 強制縮放網頁)
-    ========================================================= */
-    document.addEventListener('touchmove', function(e) {
-        // 如果偵測到雙指以上操作，且目標「不是」在 zoomContainer 內，就阻止預設行為
-        if (e.touches.length > 1 && !e.target.closest('#zoomContainer')) {
-            e.preventDefault();
-        }
-    }, { passive: false });
+    document.addEventListener('touchmove', function(e) { if (e.touches.length > 1 && !e.target.closest('#zoomContainer')) e.preventDefault(); }, { passive: false });
 
     exModeSel.addEventListener('change', syncFretboardState);
     [keySel, scaleSel, chordSel, arpStrSel, strPairSel, strTriSel, strQuadSel, strQuinSel].forEach(el => el.addEventListener('change', syncFretboardState));
@@ -571,64 +518,221 @@ document.addEventListener("DOMContentLoaded", () => {
         renderFretboard();
     });
 
+    /* =========================================================
+       MODULE 2: CHORD TONE TRAINER LOGIC
+    ========================================================= */
+    const TRAINER_CHORDS = {
+        'maj7': { intervals: [4, 7, 11], labels: ['3', '5', '7'] },
+        'min7': { intervals: [3, 7, 10], labels: ['b3', '5', 'b7'] },
+        'dom7': { intervals: [4, 7, 10], labels: ['3', '5', 'b7'] },
+        'm7b5': { intervals: [3, 6, 10], labels: ['b3', 'b5', 'b7'] },
+        'aug7': { intervals: [4, 8, 10], labels: ['3', '#5', 'b7'] },
+        'dim7': { intervals: [3, 6, 9],  labels: ['b3', 'b5', 'bb7'] }
+    };
+
+    // Keyboard configuration (maps button text to pitch class 0-11)
+    const KEYBOARD_LAYOUT = [
+        { label: 'C', val: 0 }, { label: 'C#', val: 1 }, { label: 'D', val: 2 }, { label: 'D#', val: 3 }, 
+        { label: 'E', val: 4 }, { label: 'F', val: 5 }, { label: 'F#', val: 6 }, { label: 'G', val: 7 }, 
+        { label: 'G#', val: 8 }, { label: 'A', val: 9 }, { label: 'A#', val: 10 }, { label: 'B', val: 11 },
+        { label: 'Db', val: 1 }, { label: 'Eb', val: 3 }, { label: 'Gb', val: 6 }, { label: 'Ab', val: 8 }, 
+        { label: 'Bb', val: 10 }, { label: 'Bbb', val: 9 } // Bbb special case for dim7
+    ];
+
+    let tRoot = 0; 
+    let tChord = 'maj7';
+    let tAnswers = [null, null, null]; // user selected note values for box1, box2, box3
+    let activeBoxIdx = null;
+
+    const elDisplayRoot = document.getElementById('displayRootName');
+    const elTypeSel = document.getElementById('trainerChordType');
+    const elSeqSel = document.getElementById('trainerSeqMode');
+    const elAccToggle = document.getElementById('trainerAccidentalToggle');
+    const elTipsToggle = document.getElementById('trainerTipsToggle');
+    const elKeyboard = document.getElementById('trainerKeyboard');
+    const boxes = [
+        document.getElementById('box1'),
+        document.getElementById('box2'),
+        document.getElementById('box3')
+    ];
+    const boxLabels = [
+        document.getElementById('lblBox1'),
+        document.getElementById('lblBox2'),
+        document.getElementById('lblBox3')
+    ];
+
+    function initTrainer() {
+        renderTrainerKeyboard();
+        resetTrainerRound();
+    }
+
+    function renderTrainerKeyboard() {
+        elKeyboard.innerHTML = '';
+        const isFlat = !elAccToggle.checked; // default false -> flat
+        
+        KEYBOARD_LAYOUT.forEach(key => {
+            // Simple filter logic for flat/sharp display
+            if (isFlat && key.label.includes('#')) return;
+            if (!isFlat && key.label.includes('b') && key.label !== 'Bbb') return;
+            
+            const btn = document.createElement('button');
+            btn.className = 'key-btn';
+            btn.innerText = key.label;
+            btn.onclick = () => handleKeyClick(key.label, key.val);
+            elKeyboard.appendChild(btn);
+        });
+    }
+
+    function resetTrainerRound() {
+        const isFlat = !elAccToggle.checked;
+        elDisplayRoot.innerText = isFlat ? NOTES_FLAT[tRoot] : NOTES_SHARP[tRoot];
+        document.getElementById('box0').innerText = elDisplayRoot.innerText;
+        
+        tAnswers = [null, null, null];
+        const chordDef = TRAINER_CHORDS[tChord];
+
+        boxes.forEach((box, i) => {
+            box.querySelector('.val').innerText = '?';
+            box.querySelector('.hint-text').innerText = '';
+            box.className = 'tone-box input-box';
+            boxLabels[i].innerText = chordDef.labels[i];
+        });
+        
+        setActiveBox(1);
+    }
+
+    function setActiveBox(idx) {
+        activeBoxIdx = idx;
+        boxes.forEach((box, i) => {
+            if ((i + 1) === idx) box.classList.add('active');
+            else box.classList.remove('active');
+        });
+    }
+
+    function handleKeyClick(label, val) {
+        if (!activeBoxIdx) return;
+        const boxIndex = activeBoxIdx - 1;
+        tAnswers[boxIndex] = val;
+        boxes[boxIndex].querySelector('.val').innerText = label;
+        boxes[boxIndex].classList.remove('error', 'success', 'show-hint');
+        
+        // Auto-advance box
+        if (activeBoxIdx < 3) setActiveBox(activeBoxIdx + 1);
+        else setActiveBox(1);
+    }
+
+    function getExpectedNoteName(rootVal, intervalSteps) {
+        const isFlat = !elAccToggle.checked;
+        const targetVal = (rootVal + intervalSteps) % 12;
+        // Exception for dim7 bb7 (interval 9)
+        if (tChord === 'dim7' && intervalSteps === 9) return 'Bbb/A'; 
+        return isFlat ? NOTES_FLAT[targetVal] : NOTES_SHARP[targetVal];
+    }
+
+    function validateTrainer() {
+        const chordDef = TRAINER_CHORDS[tChord];
+        let allCorrect = true;
+        let tipsOn = elTipsToggle.checked;
+
+        boxes.forEach((box, i) => {
+            const expectedVal = (tRoot + chordDef.intervals[i]) % 12;
+            const userVal = tAnswers[i];
+            
+            box.classList.remove('active', 'error', 'success', 'show-hint');
+
+            if (userVal === null) {
+                allCorrect = false;
+                box.classList.add('error');
+            } else if (userVal !== expectedVal) {
+                allCorrect = false;
+                box.classList.add('error');
+                if (tipsOn) {
+                    box.querySelector('.hint-text').innerText = getExpectedNoteName(tRoot, chordDef.intervals[i]);
+                    box.classList.add('show-hint');
+                }
+            } else {
+                box.classList.add('success');
+            }
+        });
+
+        if (allCorrect) {
+            // Link to Fretboard!
+            mapTrainerToFretboard(tRoot, tChord);
+            
+            // Advance to next root after delay
+            setTimeout(() => {
+                advanceTrainerRoot();
+                resetTrainerRound();
+            }, 1200);
+        }
+    }
+
+    function advanceTrainerRoot() {
+        const seq = elSeqSel.value;
+        if (seq === 'chromatic') {
+            tRoot = (tRoot + 1) % 12;
+        } else if (seq === 'circle5ths') {
+            tRoot = (tRoot + 7) % 12; // UP a 5th
+        } else {
+            let next = tRoot;
+            while(next === tRoot) next = Math.floor(Math.random() * 12);
+            tRoot = next;
+        }
+    }
+
+    function mapTrainerToFretboard(rootVal, chordType) {
+        // 設定指板模組 UI
+        exModeSel.value = 'arpeggio';
+        keySel.value = rootVal;
+        chordSel.value = chordType;
+        
+        // 確保目前是在 intervals 視角比較容易看出結構
+        viewModeSel.value = 'intervals'; 
+        
+        // 觸發指板重繪
+        syncFretboardState();
+
+        // 平滑滾動到指板區域
+        document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Trainer Event Listeners
+    elTypeSel.addEventListener('change', e => { tChord = e.target.value; resetTrainerRound(); });
+    elAccToggle.addEventListener('change', () => { renderTrainerKeyboard(); resetTrainerRound(); });
+    
+    document.getElementById('btnPrevRoot').addEventListener('click', () => {
+        tRoot = (tRoot - 1 + 12) % 12; resetTrainerRound();
+    });
+    document.getElementById('btnNextRoot').addEventListener('click', () => {
+        tRoot = (tRoot + 1) % 12; resetTrainerRound();
+    });
+
+    boxes.forEach(box => {
+        box.addEventListener('click', () => setActiveBox(parseInt(box.getAttribute('data-idx'))));
+    });
+
+    document.getElementById('btnTrainerSubmit').addEventListener('click', validateTrainer);
+
+    // Init Module 2
+    initTrainer();
+
 
     /* =========================================================
-       MODULE 2: RHYTHM GENERATOR LOGIC (1 Beat = 1 Card)
+       MODULE 3: RHYTHM GENERATOR LOGIC (1 Beat = 1 Card)
     ========================================================= */
-
-    // 使用向量圖形 (Path) 替換原本的純文字，確保所有手機設備都能完美渲染
     const BASIC_PATTERNS = [
-        { 
-            id: 'custom_q', type: 'simple', name: '四分音符', events: [0], 
-            svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(85, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/></g></svg>` 
-        },
-        { 
-            id: 'custom_qr', type: 'simple', name: '四分休止符', events: [], 
-            svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(75, 20) scale(1.1)"><path d="M 25 15 L 35 25 L 20 45 L 35 55 L 25 75 L 30 75 L 40 52 L 27 43 L 42 23 Z" /></g></svg>` 
-        },
-        { 
-            id: 'custom_88', type: 'simple', name: '兩個八分音符', events: [0, 0.5], 
-            svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(60, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><ellipse cx="65" cy="65" rx="14" ry="10" transform="rotate(-20 65 65)"/><rect x="75" y="10" width="3" height="55"/><rect x="25" y="10" width="53" height="8"/></g></svg>` 
-        },
-        { 
-            id: 'custom_8r', type: 'simple', name: '八分音符+休止', events: [0], 
-            svg: `<svg viewBox="0 0 200 130">
-                    <g fill="currentColor" transform="translate(40, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><path d="M 28 10 Q 45 20 35 45 Q 30 25 28 25 Z"/></g>
-                    <g fill="currentColor" transform="translate(110, 35)"><circle cx="15" cy="15" r="6"/><path d="M 15 15 Q 35 -5 35 25 L 25 65 H 22 L 32 25 Q 32 5 15 20 Z"/></g>
-                  </svg>` 
-        },
-        { 
-            id: 'custom_r8', type: 'simple', name: '八分休止+音符', events: [0.5], 
-            svg: `<svg viewBox="0 0 200 130">
-                    <g fill="currentColor" transform="translate(50, 35)"><circle cx="15" cy="15" r="6"/><path d="M 15 15 Q 35 -5 35 25 L 25 65 H 22 L 32 25 Q 32 5 15 20 Z"/></g>
-                    <g fill="currentColor" transform="translate(100, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><path d="M 28 10 Q 45 20 35 45 Q 30 25 28 25 Z"/></g>
-                  </svg>` 
-        }
+        { id: 'custom_q', type: 'simple', name: '四分音符', events: [0], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(85, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/></g></svg>` },
+        { id: 'custom_qr', type: 'simple', name: '四分休止符', events: [], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(75, 20) scale(1.1)"><path d="M 25 15 L 35 25 L 20 45 L 35 55 L 25 75 L 30 75 L 40 52 L 27 43 L 42 23 Z" /></g></svg>` },
+        { id: 'custom_88', type: 'simple', name: '兩個八分音符', events: [0, 0.5], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(60, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><ellipse cx="65" cy="65" rx="14" ry="10" transform="rotate(-20 65 65)"/><rect x="75" y="10" width="3" height="55"/><rect x="25" y="10" width="53" height="8"/></g></svg>` },
+        { id: 'custom_8r', type: 'simple', name: '八分音符+休止', events: [0], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(40, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><path d="M 28 10 Q 45 20 35 45 Q 30 25 28 25 Z"/></g><g fill="currentColor" transform="translate(110, 35)"><circle cx="15" cy="15" r="6"/><path d="M 15 15 Q 35 -5 35 25 L 25 65 H 22 L 32 25 Q 32 5 15 20 Z"/></g></svg>` },
+        { id: 'custom_r8', type: 'simple', name: '八分休止+音符', events: [0.5], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(50, 35)"><circle cx="15" cy="15" r="6"/><path d="M 15 15 Q 35 -5 35 25 L 25 65 H 22 L 32 25 Q 32 5 15 20 Z"/></g><g fill="currentColor" transform="translate(100, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><path d="M 28 10 Q 45 20 35 45 Q 30 25 28 25 Z"/></g></svg>` }
     ];
 
     if (!window.ALL_PATTERNS) window.ALL_PATTERNS = [];
-    // 安全地將這些基礎節奏插入到庫的最前方
-    BASIC_PATTERNS.forEach(bp => {
-        if (!window.ALL_PATTERNS.find(p => p.id === bp.id)) {
-            window.ALL_PATTERNS.unshift(bp);
-        }
-    });
+    BASIC_PATTERNS.forEach(bp => { if (!window.ALL_PATTERNS.find(p => p.id === bp.id)) window.ALL_PATTERNS.unshift(bp); });
 
-    let audioCtx;
-    let isPlaying = false;
-    let bpm = 100;
-    let kickVolume = 0.8;
-    let clapVolume = 0.8;
-    let shuffleProb = 0;
-    let kickEnabled = true;
-
-    let timerID;
-    let nextBeatTime = 0;
-    let currentBeatIndex = 0; 
-    let beatsPerBar = 4;
-    let currentMeterMode = 'simple';
-    let activePatternIDs = [];
-    let currentMeasure = [];
+    let audioCtx, isPlaying = false, bpm = 100, kickVolume = 0.8, clapVolume = 0.8, shuffleProb = 0, kickEnabled = true;
+    let timerID, nextBeatTime = 0, currentBeatIndex = 0, beatsPerBar = 4, currentMeterMode = 'simple', activePatternIDs = [], currentMeasure = [];
 
     const displayArea = document.getElementById('displayArea');
     const libraryGrid = document.getElementById('libraryGrid');
@@ -638,14 +742,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function syncRhythmUI() {
         const val = document.getElementById('timeSigSelect').value;
         const [num, den] = val.split('/').map(Number);
-        if (den === 8 && num % 3 === 0) {
-            currentMeterMode = 'compound'; beatsPerBar = num / 3;
-        } else {
-            currentMeterMode = 'simple'; beatsPerBar = num;
-        }
+        if (den === 8 && num % 3 === 0) { currentMeterMode = 'compound'; beatsPerBar = num / 3; } 
+        else { currentMeterMode = 'simple'; beatsPerBar = num; }
         libTitle.innerText = `Library (${val})`;
-        renderLibrary();
-        generateRhythm();
+        renderLibrary(); generateRhythm();
     }
 
     function renderLibrary() {
@@ -653,62 +753,42 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!window.ALL_PATTERNS) return;
         const patternsToShow = window.ALL_PATTERNS.filter(p => p.type === currentMeterMode);
         activePatternIDs = patternsToShow.map(p => p.id); 
-
         patternsToShow.forEach(p => {
-            const div = document.createElement('div');
-            div.className = 'pattern-item selected';
-            div.innerHTML = p.svg; div.title = p.name;
-            div.onclick = () => {
-                div.classList.toggle('selected');
-                if (activePatternIDs.includes(p.id)) activePatternIDs = activePatternIDs.filter(id => id !== p.id);
-                else activePatternIDs.push(p.id);
-            };
+            const div = document.createElement('div'); div.className = 'pattern-item selected'; div.innerHTML = p.svg; div.title = p.name;
+            div.onclick = () => { div.classList.toggle('selected'); if (activePatternIDs.includes(p.id)) activePatternIDs = activePatternIDs.filter(id => id !== p.id); else activePatternIDs.push(p.id); };
             libraryGrid.appendChild(div);
         });
     }
 
     function generateRhythm() {
         if (activePatternIDs.length === 0) return;
-        currentMeasure = [];
-        displayArea.innerHTML = '';
-        
+        currentMeasure = []; displayArea.innerHTML = '';
         for (let i = 0; i < beatsPerBar; i++) {
             const randId = activePatternIDs[Math.floor(Math.random() * activePatternIDs.length)];
             const patternObj = window.ALL_PATTERNS.find(p => p.id === randId);
             if (patternObj) {
                 currentMeasure.push(patternObj);
-                const card = document.createElement('div');
-                card.className = 'beat-card';
-                card.innerHTML = `<div class="svg-container">${patternObj.svg}</div>`;
+                const card = document.createElement('div'); card.className = 'beat-card'; card.innerHTML = `<div class="svg-container">${patternObj.svg}</div>`;
                 displayArea.appendChild(card);
             }
         }
     }
 
-    function initAudio() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
 
     function playSound(time, type) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
         if (type === 'kick') {
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.frequency.setValueAtTime(150, time); osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
             gain.gain.setValueAtTime(kickVolume, time); gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
             osc.start(time); osc.stop(time + 0.5);
         } else {
-            const bufferSize = audioCtx.sampleRate * 2; 
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
-            
+            const bufferSize = audioCtx.sampleRate * 2; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1; 
             const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
             const filter = audioCtx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 1200; filter.Q.value = 1; 
             const clapGain = audioCtx.createGain(); clapGain.gain.setValueAtTime(clapVolume, time); clapGain.gain.exponentialRampToValueAtTime(0.01, time + 0.15); 
-            
             noise.connect(filter); filter.connect(clapGain); clapGain.connect(audioCtx.destination);
             noise.start(time); noise.stop(time + 0.2);
         }
@@ -716,100 +796,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function scheduler() {
         while (nextBeatTime < audioCtx.currentTime + 0.1) {
-            const beatDuration = 60.0 / bpm;
-            const currentIdx = currentBeatIndex;
-            const visualDelay = (nextBeatTime - audioCtx.currentTime) * 1000;
-            
-            // UI 視覺亮燈排程
-            setTimeout(() => {
-                const cards = document.querySelectorAll('.beat-card');
-                cards.forEach((c, i) => {
-                    if (i === currentIdx) c.classList.add('active');
-                    else c.classList.remove('active');
-                });
-            }, Math.max(0, visualDelay));
-
-            // 每拍固定打一下 Kick
+            const beatDuration = 60.0 / bpm; const currentIdx = currentBeatIndex; const visualDelay = (nextBeatTime - audioCtx.currentTime) * 1000;
+            setTimeout(() => { document.querySelectorAll('.beat-card').forEach((c, i) => { if (i === currentIdx) c.classList.add('active'); else c.classList.remove('active'); }); }, Math.max(0, visualDelay));
             if (kickEnabled) playSound(nextBeatTime, 'kick');
-
-            // 排程 Clap：相對發聲位置
             const pattern = currentMeasure[currentBeatIndex];
-            if (pattern && pattern.events) {
-                pattern.events.forEach(ratio => {
-                    playSound(nextBeatTime + (ratio * beatDuration), 'clap');
-                });
-            }
-
-            nextBeatTime += beatDuration;
-            currentBeatIndex++;
+            if (pattern && pattern.events) pattern.events.forEach(ratio => playSound(nextBeatTime + (ratio * beatDuration), 'clap'));
+            nextBeatTime += beatDuration; currentBeatIndex++;
 
             if (currentBeatIndex >= beatsPerBar) {
                 currentBeatIndex = 0;
-                
-                // Chaos 機制：小節結束時判斷是否隨機替換音符
                 if (shuffleProb > 0 && activePatternIDs.length > 0) {
                     setTimeout(() => {
                         for (let i = 0; i < beatsPerBar; i++) {
                             if (Math.random() * 100 < shuffleProb) {
-                                const randId = activePatternIDs[Math.floor(Math.random() * activePatternIDs.length)];
-                                const newPattern = window.ALL_PATTERNS.find(p => p.id === randId);
-                                if (newPattern) {
-                                    currentMeasure[i] = newPattern;
-                                    const card = displayArea.children[i];
-                                    if (card) {
-                                        card.innerHTML = `<div class="svg-container">${newPattern.svg}</div>`;
-                                        card.classList.remove('changing'); void card.offsetWidth; card.classList.add('changing');
-                                    }
-                                }
+                                const newPattern = window.ALL_PATTERNS.find(p => p.id === activePatternIDs[Math.floor(Math.random() * activePatternIDs.length)]);
+                                if (newPattern) { currentMeasure[i] = newPattern; const card = displayArea.children[i]; if (card) { card.innerHTML = `<div class="svg-container">${newPattern.svg}</div>`; card.classList.remove('changing'); void card.offsetWidth; card.classList.add('changing'); } }
                             }
                         }
-                    }, Math.max(0, visualDelay + beatDuration * 800)); // 在最後一拍快結束時更新 UI
+                    }, Math.max(0, visualDelay + beatDuration * 800));
                 }
             }
         }
         if (isPlaying) timerID = requestAnimationFrame(scheduler);
     }
 
-    // Rhythm Event Listeners
     document.getElementById('timeSigSelect').addEventListener('change', syncRhythmUI);
     document.getElementById('bpmSlider').addEventListener('input', e => { bpm = parseInt(e.target.value); document.getElementById('bpmDisplay').innerText = bpm; });
     document.getElementById('kickVolSlider').addEventListener('input', e => { kickVolume = parseInt(e.target.value) / 100; });
     document.getElementById('clapVolSlider').addEventListener('input', e => { clapVolume = parseInt(e.target.value) / 100; });
     document.getElementById('shuffleSlider').addEventListener('input', e => { shuffleProb = parseInt(e.target.value); document.getElementById('shuffleDisplay').innerText = shuffleProb + "%"; });
-
     document.getElementById('kickBtn').addEventListener('click', e => { kickEnabled = !kickEnabled; e.currentTarget.classList.toggle('active'); });
     document.getElementById('randomRhythmBtn').addEventListener('click', generateRhythm);
     
     playBtn.addEventListener('click', e => {
-        if (isPlaying) {
-            isPlaying = false;
-            playBtn.classList.remove('playing');
-            playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-            document.querySelectorAll('.beat-card').forEach(c => c.classList.remove('active'));
-        } else {
-            initAudio(); isPlaying = true;
-            playBtn.classList.add('playing');
-            playBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-            currentBeatIndex = 0; nextBeatTime = audioCtx.currentTime + 0.1;
-            scheduler();
-        }
+        if (isPlaying) { isPlaying = false; playBtn.classList.remove('playing'); playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'; document.querySelectorAll('.beat-card').forEach(c => c.classList.remove('active')); } 
+        else { initAudio(); isPlaying = true; playBtn.classList.add('playing'); playBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'; currentBeatIndex = 0; nextBeatTime = audioCtx.currentTime + 0.1; scheduler(); }
     });
 
-    document.getElementById('toggleLibBtn').addEventListener('click', () => {
-        const grid = document.getElementById('libraryGrid');
-        grid.classList.toggle('collapsed');
-        document.getElementById('toggleLibBtn').innerText = grid.classList.contains('collapsed') ? '▶' : '▼';
-    });
-
-    document.getElementById('selectAllBtn').addEventListener('click', () => {
-        activePatternIDs = window.ALL_PATTERNS.filter(p => p.type === currentMeterMode).map(p => p.id);
-        document.querySelectorAll('.pattern-item').forEach(el => el.classList.add('selected'));
-    });
-    
-    document.getElementById('deselectAllBtn').addEventListener('click', () => {
-        activePatternIDs = [];
-        document.querySelectorAll('.pattern-item').forEach(el => el.classList.remove('selected'));
-    });
+    document.getElementById('toggleLibBtn').addEventListener('click', () => { const grid = document.getElementById('libraryGrid'); grid.classList.toggle('collapsed'); document.getElementById('toggleLibBtn').innerText = grid.classList.contains('collapsed') ? '▶' : '▼'; });
+    document.getElementById('selectAllBtn').addEventListener('click', () => { activePatternIDs = window.ALL_PATTERNS.filter(p => p.type === currentMeterMode).map(p => p.id); document.querySelectorAll('.pattern-item').forEach(el => el.classList.add('selected')); });
+    document.getElementById('deselectAllBtn').addEventListener('click', () => { activePatternIDs = []; document.querySelectorAll('.pattern-item').forEach(el => el.classList.remove('selected')); });
 
     /* =========================================================
        INITIALIZATION
