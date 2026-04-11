@@ -22,6 +22,14 @@
             --note-extension: #9B59B6; 
             --note-ghost: #2C2C2C;  
             
+            /* 新增：平行調與經過音專用顏色 */
+            --note-common: #3498DB; 
+            --note-major: #F1C40F; 
+            --note-minor: #9B59B6; 
+            --note-passing-bg: #2A2A2A; 
+            --note-passing-border: #666666;
+            --note-passing-text: #AAAAAA;
+            
             --note-text-active: #ffffff;
             --note-text-ghost: #555555;
 
@@ -120,7 +128,7 @@
         ========================================= */
         .switches-area { display: flex; gap: 10px; align-items: center; }
         .controls-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; margin-top: 12px; }
-        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect, #chordTypeSelect, #arpeggioStringSelect { border-color: var(--note-active); font-weight: bold; }
+        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect, #chordTypeSelect, #arpeggioStringSelect, #parallelModeSelect, #chromaticFilterSelect { border-color: var(--note-active); font-weight: bold; }
 
         .pos-buttons-container {
             display: flex; gap: 8px; overflow-x: auto; padding: 12px 20px;
@@ -143,17 +151,16 @@
 
         .legend { display: flex; gap: 15px; padding: 12px 20px; font-size: 0.8rem; background: var(--bg-body); border-top: 1px solid var(--fret-line); justify-content: center; flex-wrap: wrap; color: var(--text-sub); }
         .legend-item { display: flex; align-items: center; gap: 6px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; box-sizing: border-box; }
         .note-text { font-family: inherit; font-weight: bold; font-size: 10px; }
 
         .reset-zoom-btn { position: absolute; bottom: 50px; right: 20px; background: rgba(0,0,0,0.6); color: white; border: 1px solid var(--btn-border); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; z-index: 20; transition: 0.2s; }
         .reset-zoom-btn:hover { background: var(--note-active); border-color: var(--note-active); }
 
         /* =========================================
-           MODULE 2: CHORD TONE TRAINER (NEW)
+           MODULE 2: CHORD TONE TRAINER
         ========================================= */
         .trainer-stage { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 25px; background: var(--bg-body); }
-        
         .chord-display { display: flex; align-items: center; gap: 15px; }
         .chord-nav-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .chord-nav-btn:hover { background: var(--note-active); border-color: var(--note-active); }
@@ -164,18 +171,13 @@
         .tone-box-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; min-width: 70px; }
         .tone-box-label { font-size: 0.85rem; color: var(--text-sub); font-weight: bold; }
         
-        .tone-box { 
-            width: 100%; aspect-ratio: 1; border-radius: 12px; border: 2px solid var(--btn-border);
-            background: var(--bg-app); display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-size: 1.5rem; font-weight: bold; color: var(--text-main); cursor: pointer; transition: 0.2s; position: relative;
-        }
+        .tone-box { width: 100%; aspect-ratio: 1; border-radius: 12px; border: 2px solid var(--btn-border); background: var(--bg-app); display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; color: var(--text-main); cursor: pointer; transition: 0.2s; position: relative;}
         .tone-box.root-box { background: var(--btn-bg); color: var(--note-root); border-color: var(--btn-border); cursor: default; }
         .tone-box.active { border-color: var(--note-active); box-shadow: 0 0 15px rgba(52, 152, 219, 0.4); transform: translateY(-3px); }
         .tone-box.success { border-color: var(--success-color); color: var(--success-color); background: rgba(46, 204, 113, 0.1); }
         .tone-box.error { border-color: var(--error-color); color: var(--error-color); background: rgba(231, 76, 60, 0.1); animation: shake 0.4s; }
         .tone-box .hint-text { position: absolute; bottom: 5px; font-size: 0.8rem; color: var(--success-color); opacity: 0; transition: 0.3s; }
         .tone-box.error.show-hint .hint-text { opacity: 1; }
-
         @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
 
         .keyboard-panel { background: var(--bg-app); border: 1px solid var(--btn-border); border-radius: 12px; padding: 15px; width: 100%; max-width: 500px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
@@ -192,7 +194,6 @@
         .rc-group { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .rc-label { font-size: 0.8rem; color: var(--text-sub); font-weight: normal; }
         .val-display { font-size: 0.9rem; font-weight: bold; color: var(--note-active); }
-
         input[type="range"] { -webkit-appearance: none; width: 100px; background: transparent; height: 20px; }
         input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: var(--btn-border); border-radius: 2px;}
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--note-active); margin-top: -6px; cursor: pointer; }
@@ -253,6 +254,9 @@
                         <option value="triplet_drill">模式: 三弦模進</option>
                         <option value="quad_drill">模式: 四弦模進</option>
                         <option value="quint_drill">模式: 五弦模進</option>
+                        <option disabled>──────────</option>
+                        <option value="parallel">探索: 平行大小調對照</option>
+                        <option value="chromatic">探索: 半音階與經過音</option>
                     </select>
 
                     <select id="keySelect">
@@ -270,6 +274,17 @@
                         <option value="11">Key: B</option>
                     </select>
 
+                    <select id="parallelModeSelect" class="hidden">
+                        <option value="overlay" selected>顯示: 平行對照 (Overlay)</option>
+                        <option value="maj">顯示: 僅大調 (Major)</option>
+                        <option value="min">顯示: 僅小調 (Minor)</option>
+                    </select>
+
+                    <select id="chromaticFilterSelect" class="hidden">
+                        <option value="maj_pass" selected>濾鏡: 大調骨幹 + 經過音</option>
+                        <option value="min_pass">濾鏡: 小調骨幹 + 經過音</option>
+                        <option value="all">濾鏡: 純半音階</option>
+                    </select>
                     <select id="scaleSelect" class="hidden">
                         <optgroup label="Basic Scales">
                             <option value="major">Major (Ionian)</option>
@@ -338,7 +353,7 @@
             </div>
             <button class="reset-zoom-btn" id="resetZoomBtn">Reset View</button>
 
-            <div class="legend">
+            <div class="legend" id="fretboardLegend">
                 <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
                 <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>組成音</div>
                 <div class="legend-item"><span class="dot" style="background:var(--note-extension)"></span>特徵音</div>
@@ -403,9 +418,7 @@
                     </div>
                 </div>
 
-                <div class="keyboard-panel" id="trainerKeyboard">
-                    </div>
-
+                <div class="keyboard-panel" id="trainerKeyboard"></div>
                 <button class="submit-btn" id="btnTrainerSubmit">Submit & Map to Fretboard</button>
             </div>
         </div>

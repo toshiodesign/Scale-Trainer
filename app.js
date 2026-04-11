@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'dom7':     [0, 4, 7, 10],
         'min7':     [0, 3, 7, 10],
         'm7b5':     [0, 3, 6, 10],
-        'aug7':     [0, 4, 8, 10], // 新增 Dom7#5
+        'aug7':     [0, 4, 8, 10], 
         'dim7':     [0, 3, 6, 9],
         'mM7':      [0, 3, 7, 11]
     };
@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'dom7':     ['R', '3', '5', 'b7'],
         'min7':     ['R', 'b3', '5', 'b7'],
         'm7b5':     ['R', 'b3', 'b5', 'b7'],
-        'aug7':     ['R', '3', '#5', 'b7'], // 新增 Dom7#5
+        'aug7':     ['R', '3', '#5', 'b7'], 
         'dim7':     ['R', 'b3', 'b5', 'bb7'],
         'mM7':      ['R', 'b3', '5', '7']
     };
@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'dom7': { '1st': [[0,0], [0,4], [-1,2], [-2,0], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,2], [-2,0], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-3], [-2,0], [-3,-3]] },
         'min7': { '1st': [[0,0], [-1,-2], [-1,2], [-2,0], [-2,2]], '2nd': [[0,0], [0,3], [-1,2], [-2,0], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-3], [-2,0], [-3,-3]] },
         'm7b5': { '1st': [[0,0], [-1,-2], [-1,1], [-2,0], [-2,2]], '2nd': [[0,0], [0,3], [-1,1], [-2,0], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-4], [-2,0], [-3,-3]] },
-        'aug7': { '1st': [[0,0], [0,4], [-1,3], [-2,0], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,3], [-2,0], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-2], [-2,0], [-3,-3]] }, // 新增 Dom7#5
+        'aug7': { '1st': [[0,0], [0,4], [-1,3], [-2,0], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,3], [-2,0], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-2], [-2,0], [-3,-3]] }, 
         'dim7': { '1st': [[0,0], [-1,-2], [-1,1], [-2,-1], [-2,2]], '2nd': [[0,0], [0,3], [-1,1], [-2,-1], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-4], [-2,-1], [-3,-3]] },
         'mM7': { '1st': [[0,0], [-1,-2], [-1,2], [-2,1], [-2,2]], '2nd': [[0,0], [0,3], [-1,2], [-2,1], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-3], [-3,-4], [-3,-3]] }
     };
@@ -73,8 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const SOLFEGE_MAP = {
-        'R': 'Do', '2': 'Re', '3': 'Mi', 'b3': 'Me', '4': 'Fa', '#4': 'Fi', 'b5': 'Se', 
-        '5': 'So', '#5': 'Si', '6': 'La', 'b6': 'Le', '7': 'Si', 'b7': 'Te', 'bb7': 'La'
+        'R': 'Do', 'b2': 'Ra', '2': 'Re', 'b3': 'Me', '3': 'Mi', '4': 'Fa', '#4': 'Fi', 'b5': 'Se', 
+        '5': 'So', '#5': 'Si', 'b6': 'Le', '6': 'La', 'b7': 'Te', '7': 'Si', 'bb7': 'La'
     };
 
     const SCALE_MODE_NAMES = {
@@ -105,6 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const strQuinSel = document.getElementById('stringQuintSelect');
     const viewModeSel = document.getElementById('viewModeSelect');
     const multiCheck = document.getElementById('multiModeCheck');
+    const parallelSel = document.getElementById('parallelModeSelect');
+    const chromaticSel = document.getElementById('chromaticFilterSelect');
 
     function getNoteValue(stringIdx, fret) { return (TUNING[stringIdx] + fret) % 12; }
     function getNoteName(val, interval) {
@@ -112,7 +114,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (interval && interval.includes('b')) return NOTES_FLAT[val];
         return NOTES_FLAT[val];
     }
+    
     function getIntervalLabel(noteVal) {
+        if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
+            const CHROMATIC_INTERVALS = ['R', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'];
+            let rootOffset = (noteVal - parseInt(currentRoot) + 12) % 12;
+            return CHROMATIC_INTERVALS[rootOffset];
+        }
+
         let type = (exerciseMode === 'pair_drill' || exerciseMode === 'triplet_drill' || exerciseMode === 'quad_drill' || exerciseMode === 'quint_drill') ? 'major' : currentScaleType;
         const scaleIntervals = SCALES[type];
         if (!scaleIntervals) return null;
@@ -121,6 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (idx !== -1) return INTERVAL_NAMES[type][idx];
         return null;
     }
+
     function getSolfegeLabel(noteVal) {
         let interval = getIntervalLabel(noteVal);
         return SOLFEGE_MAP[interval] || interval || "?";
@@ -213,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
             return activeNotes;
-        } else if (exerciseMode !== 'scale') {
+        } else if (exerciseMode !== 'scale' && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
             let pos = generatedPositions.find(p => p.id === anchorId);
             if (!pos) return [];
             return pos.notes.map(n => ({ s: n.s, fret: n.fret, val: n.val, isRoot: n.val === parseInt(currentRoot) }));
@@ -245,14 +255,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function syncFretboardState() {
         exerciseMode = exModeSel.value;
-        const selectors = [scaleSel, strPairSel, strTriSel, strQuadSel, strQuinSel, chordSel, arpStrSel];
-        selectors.forEach(el => el.classList.add('hidden'));
+        const selectors = [scaleSel, strPairSel, strTriSel, strQuadSel, strQuinSel, chordSel, arpStrSel, parallelSel, chromaticSel];
+        selectors.forEach(el => { if(el) el.classList.add('hidden'); });
 
         if (exerciseMode === 'scale') {
             scaleSel.classList.remove('hidden'); currentScaleType = scaleSel.value;
         } else if (exerciseMode === 'arpeggio') {
             chordSel.classList.remove('hidden'); arpStrSel.classList.remove('hidden');
             currentScaleType = chordSel.value;
+        } else if (exerciseMode === 'parallel') {
+            parallelSel.classList.remove('hidden');
+            currentScaleType = 'major';
+        } else if (exerciseMode === 'chromatic') {
+            chromaticSel.classList.remove('hidden');
+            currentScaleType = 'major';
         } else {
             currentScaleType = 'major';
             if (exerciseMode === 'pair_drill') strPairSel.classList.remove('hidden');
@@ -271,13 +287,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 { id: '2nd', label: 'Shape 2', subLabel: '2nd Finger' },
                 { id: '4th', label: 'Shape 3', subLabel: '4th Finger' }
             ];
+        } else if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
+            generatedPositions = [{ id: 'all', label: '全指板探索', modeName: '' }];
         } else {
             let selMap = {'pair_drill':strPairSel, 'triplet_drill':strTriSel, 'quad_drill':strQuadSel, 'quint_drill':strQuinSel};
             selectedStrings = selMap[exerciseMode].value.split(',').map(Number);
             generatedPositions = generateSequenceDrillPositions();
         }
         
-        if (!isFretboardMultiMode || activeAnchors.size === 0) {
+        if (!isFretboardMultiMode || activeAnchors.size === 0 || exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
             activeAnchors.clear();
             if(generatedPositions.length > 0) activeAnchors.add(generatedPositions[0].id);
         }
@@ -299,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let label = (exerciseMode === 'scale') ? ((pos.id === 0) ? "Open" : `Pos ${idx + 1}`) : pos.label;
             btn.innerHTML = `${label}<span class="mode-name">${pos.modeName || pos.subLabel}</span>`;
             btn.onclick = () => {
-                if (isFretboardMultiMode) {
+                if (isFretboardMultiMode && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
                     if (activeAnchors.has(pos.id)) activeAnchors.delete(pos.id);
                     else activeAnchors.add(pos.id);
                 } else {
@@ -311,6 +329,48 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         drawSVG(scaleNotes);
+    }
+
+    function updateLegend() {
+        const legend = document.getElementById('fretboardLegend');
+        if (!legend) return;
+        
+        if (exerciseMode === 'parallel') {
+            let pMode = document.getElementById('parallelModeSelect').value;
+            if (pMode === 'overlay') {
+                legend.innerHTML = `
+                    <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音 (Root)</div>
+                    <div class="legend-item"><span class="dot" style="background:var(--note-common)"></span>共同骨幹音 (1, 2, 4, 5)</div>
+                    <div class="legend-item"><span class="dot" style="background:var(--note-major)"></span>大調色彩音 (3, 6, 7)</div>
+                    <div class="legend-item"><span class="dot" style="background:var(--note-minor)"></span>小調色彩音 (b3, b6, b7)</div>
+                `;
+            } else {
+                legend.innerHTML = `
+                    <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
+                    <div class="legend-item"><span class="dot" style="background:${pMode === 'maj' ? 'var(--note-major)' : 'var(--note-minor)'}"></span>音階組成音</div>
+                `;
+            }
+        } else if (exerciseMode === 'chromatic') {
+            let cMode = document.getElementById('chromaticFilterSelect').value;
+            if (cMode === 'all') {
+                legend.innerHTML = `
+                    <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
+                    <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>半音階 (All 12 Notes)</div>
+                `;
+            } else {
+                legend.innerHTML = `
+                    <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
+                    <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>調內骨幹音</div>
+                    <div class="legend-item"><span class="dot" style="background:var(--note-passing-bg); border:1px solid var(--note-passing-border)"></span>經過音 (Passing Tones)</div>
+                `;
+            }
+        } else {
+            legend.innerHTML = `
+                <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
+                <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>組成音</div>
+                <div class="legend-item"><span class="dot" style="background:var(--note-extension)"></span>特徵音</div>
+            `;
+        }
     }
 
     function drawSVG(scaleNotes) {
@@ -350,6 +410,19 @@ document.addEventListener("DOMContentLoaded", () => {
             svg.appendChild(line);
         }
 
+        // 探索模式：直接繪製全指板
+        if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
+            for (let s = 0; s < STRINGS; s++) {
+                for (let f = 0; f <= FRETS; f++) {
+                    let val = getNoteValue(s, f);
+                    drawNoteCircle(svg, s, f, val, true);
+                }
+            }
+            updateLegend();
+            return;
+        }
+
+        // 其他模式：依據演算法與選擇繪製
         if (exerciseMode === 'scale' || exerciseMode === 'arpeggio') {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
@@ -375,6 +448,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         mergedActiveNotes.forEach(n => { if (n.fret <= FRETS) drawNoteCircle(svg, n.s, n.fret, n.val, true); });
+        updateLegend();
     }
 
     function drawInlay(svg, cx, cy, isDouble) {
@@ -396,22 +470,84 @@ document.addEventListener("DOMContentLoaded", () => {
         if (f === 0) cx = X_START - 20;
 
         let cy = Y_START + (s * STRING_GAP);
-        let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-
-        let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute("cx", cx); circle.setAttribute("cy", cy);
         
         let isRoot = (val === parseInt(currentRoot));
         let intervalLabel = getIntervalLabel(val);
-        let isExtension = ['9', '11', '#11', '13', 'b9', '#9', 'b13', 'b5', '#5', 'bb7'].includes(intervalLabel);
+        let rootOffset = (val - parseInt(currentRoot) + 12) % 12;
 
-        if (isActive) {
-            circle.setAttribute("r", 14);
-            let color = isRoot ? "var(--note-root)" : (isExtension ? "var(--note-extension)" : "var(--note-active)");
-            circle.setAttribute("fill", color); circle.setAttribute("stroke", "var(--bg-app)"); circle.setAttribute("stroke-width", 2);
+        let color = "var(--note-active)";
+        let strokeColor = "var(--bg-app)";
+        let strokeWidth = 2;
+        let radius = isActive ? 14 : 8;
+        let isPassing = false;
+        let textFill = isActive ? "var(--note-text-active)" : "var(--note-text-ghost)";
+        let shouldDraw = true;
+
+        if (exerciseMode === 'parallel') {
+            let pMode = document.getElementById('parallelModeSelect').value;
+            let isMajTone = SCALES['major'].includes(rootOffset);
+            let isMinTone = SCALES['minor'].includes(rootOffset);
+            
+            radius = 14; isActive = true;
+
+            if (pMode === 'overlay') {
+                if (!isMajTone && !isMinTone) shouldDraw = false;
+                if (isRoot) { color = "var(--note-root)"; }
+                else if (isMajTone && isMinTone) { color = "var(--note-common)"; }
+                else if (isMajTone) { color = "var(--note-major)"; }
+                else if (isMinTone) { color = "var(--note-minor)"; textFill = "#ffffff"; }
+            } else if (pMode === 'maj') {
+                if (!isMajTone) shouldDraw = false;
+                color = isRoot ? "var(--note-root)" : "var(--note-major)";
+            } else if (pMode === 'min') {
+                if (!isMinTone) shouldDraw = false;
+                color = isRoot ? "var(--note-root)" : "var(--note-minor)";
+            }
+        } else if (exerciseMode === 'chromatic') {
+            let cMode = document.getElementById('chromaticFilterSelect').value;
+            radius = 14; isActive = true;
+            
+            let isMajTone = SCALES['major'].includes(rootOffset);
+            let isMinTone = SCALES['minor'].includes(rootOffset);
+            
+            if (isRoot) {
+                color = "var(--note-root)";
+            } else if (cMode === 'maj_pass') {
+                if (isMajTone) color = "var(--note-active)";
+                else isPassing = true;
+            } else if (cMode === 'min_pass') {
+                if (isMinTone) color = "var(--note-active)";
+                else isPassing = true;
+            } else {
+                color = "var(--note-active)";
+            }
+            
+            if (isPassing) {
+                color = "var(--note-passing-bg)";
+                strokeColor = "var(--note-passing-border)";
+                strokeWidth = 2;
+                textFill = "var(--note-passing-text)";
+                radius = 12;
+            }
         } else {
-            circle.setAttribute("r", 8); circle.setAttribute("fill", "var(--note-ghost)"); 
+            let isExtension = ['9', '11', '#11', '13', 'b9', '#9', 'b13', 'b5', '#5', 'bb7'].includes(intervalLabel);
+            color = isRoot ? "var(--note-root)" : (isExtension ? "var(--note-extension)" : "var(--note-active)");
+            if (!isActive) {
+                color = "var(--note-ghost)";
+                strokeColor = "transparent";
+            }
         }
+
+        if (!shouldDraw) return;
+
+        let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", cx); circle.setAttribute("cy", cy);
+        circle.setAttribute("r", radius);
+        circle.setAttribute("fill", color); 
+        circle.setAttribute("stroke", strokeColor); 
+        circle.setAttribute("stroke-width", strokeWidth);
+        
+        let g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         g.appendChild(circle);
 
         if (isActive || f === 0) {
@@ -419,7 +555,7 @@ document.addEventListener("DOMContentLoaded", () => {
             txt.setAttribute("x", cx); txt.setAttribute("y", cy + 1);
             txt.setAttribute("dominant-baseline", "central"); txt.setAttribute("text-anchor", "middle");
             txt.setAttribute("class", "note-text");
-            txt.setAttribute("fill", isActive ? "var(--note-text-active)" : "var(--note-text-ghost)");
+            txt.setAttribute("fill", textFill);
             
             let labelText = "";
             if (currentViewMode === 'notes') labelText = getNoteName(val, intervalLabel);
@@ -507,12 +643,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener('touchmove', function(e) { if (e.touches.length > 1 && !e.target.closest('#zoomContainer')) e.preventDefault(); }, { passive: false });
 
+    // Event Listeners for Module 1
     exModeSel.addEventListener('change', syncFretboardState);
-    [keySel, scaleSel, chordSel, arpStrSel, strPairSel, strTriSel, strQuadSel, strQuinSel].forEach(el => el.addEventListener('change', syncFretboardState));
+    [keySel, scaleSel, chordSel, arpStrSel, strPairSel, strTriSel, strQuadSel, strQuinSel, parallelSel, chromaticSel].forEach(el => {
+        if(el) el.addEventListener('change', syncFretboardState);
+    });
     viewModeSel.addEventListener('change', renderFretboard);
     multiCheck.addEventListener('change', (e) => {
         isFretboardMultiMode = e.target.checked;
-        if (!isFretboardMultiMode && activeAnchors.size > 1) {
+        if (!isFretboardMultiMode && activeAnchors.size > 1 && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
             const first = activeAnchors.values().next().value; activeAnchors.clear(); activeAnchors.add(first);
         }
         renderFretboard();
@@ -530,18 +669,17 @@ document.addEventListener("DOMContentLoaded", () => {
         'dim7': { intervals: [3, 6, 9],  labels: ['b3', 'b5', 'bb7'] }
     };
 
-    // Keyboard configuration (maps button text to pitch class 0-11)
     const KEYBOARD_LAYOUT = [
         { label: 'C', val: 0 }, { label: 'C#', val: 1 }, { label: 'D', val: 2 }, { label: 'D#', val: 3 }, 
         { label: 'E', val: 4 }, { label: 'F', val: 5 }, { label: 'F#', val: 6 }, { label: 'G', val: 7 }, 
         { label: 'G#', val: 8 }, { label: 'A', val: 9 }, { label: 'A#', val: 10 }, { label: 'B', val: 11 },
         { label: 'Db', val: 1 }, { label: 'Eb', val: 3 }, { label: 'Gb', val: 6 }, { label: 'Ab', val: 8 }, 
-        { label: 'Bb', val: 10 }, { label: 'Bbb', val: 9 } // Bbb special case for dim7
+        { label: 'Bb', val: 10 }, { label: 'Bbb', val: 9 } 
     ];
 
     let tRoot = 0; 
     let tChord = 'maj7';
-    let tAnswers = [null, null, null]; // user selected note values for box1, box2, box3
+    let tAnswers = [null, null, null]; 
     let activeBoxIdx = null;
 
     const elDisplayRoot = document.getElementById('displayRootName');
@@ -568,10 +706,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderTrainerKeyboard() {
         elKeyboard.innerHTML = '';
-        const isFlat = !elAccToggle.checked; // default false -> flat
+        const isFlat = !elAccToggle.checked; 
         
         KEYBOARD_LAYOUT.forEach(key => {
-            // Simple filter logic for flat/sharp display
             if (isFlat && key.label.includes('#')) return;
             if (!isFlat && key.label.includes('b') && key.label !== 'Bbb') return;
             
@@ -616,7 +753,6 @@ document.addEventListener("DOMContentLoaded", () => {
         boxes[boxIndex].querySelector('.val').innerText = label;
         boxes[boxIndex].classList.remove('error', 'success', 'show-hint');
         
-        // Auto-advance box
         if (activeBoxIdx < 3) setActiveBox(activeBoxIdx + 1);
         else setActiveBox(1);
     }
@@ -624,7 +760,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function getExpectedNoteName(rootVal, intervalSteps) {
         const isFlat = !elAccToggle.checked;
         const targetVal = (rootVal + intervalSteps) % 12;
-        // Exception for dim7 bb7 (interval 9)
         if (tChord === 'dim7' && intervalSteps === 9) return 'Bbb/A'; 
         return isFlat ? NOTES_FLAT[targetVal] : NOTES_SHARP[targetVal];
     }
@@ -656,10 +791,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (allCorrect) {
-            // Link to Fretboard!
             mapTrainerToFretboard(tRoot, tChord);
-            
-            // Advance to next root after delay
             setTimeout(() => {
                 advanceTrainerRoot();
                 resetTrainerRound();
@@ -672,7 +804,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (seq === 'chromatic') {
             tRoot = (tRoot + 1) % 12;
         } else if (seq === 'circle5ths') {
-            tRoot = (tRoot + 7) % 12; // UP a 5th
+            tRoot = (tRoot + 7) % 12; 
         } else {
             let next = tRoot;
             while(next === tRoot) next = Math.floor(Math.random() * 12);
@@ -681,22 +813,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function mapTrainerToFretboard(rootVal, chordType) {
-        // 設定指板模組 UI
         exModeSel.value = 'arpeggio';
         keySel.value = rootVal;
         chordSel.value = chordType;
-        
-        // 確保目前是在 intervals 視角比較容易看出結構
         viewModeSel.value = 'intervals'; 
-        
-        // 觸發指板重繪
         syncFretboardState();
-
-        // 平滑滾動到指板區域
         document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Trainer Event Listeners
     elTypeSel.addEventListener('change', e => { tChord = e.target.value; resetTrainerRound(); });
     elAccToggle.addEventListener('change', () => { renderTrainerKeyboard(); resetTrainerRound(); });
     
@@ -712,25 +836,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById('btnTrainerSubmit').addEventListener('click', validateTrainer);
-
-    // Init Module 2
     initTrainer();
 
 
     /* =========================================================
-       MODULE 3: RHYTHM GENERATOR LOGIC (1 Beat = 1 Card)
+       MODULE 3: RHYTHM GENERATOR LOGIC
     ========================================================= */
-    const BASIC_PATTERNS = [
-        { id: 'custom_q', type: 'simple', name: '四分音符', events: [0], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(85, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/></g></svg>` },
-        { id: 'custom_qr', type: 'simple', name: '四分休止符', events: [], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(75, 20) scale(1.1)"><path d="M 25 15 L 35 25 L 20 45 L 35 55 L 25 75 L 30 75 L 40 52 L 27 43 L 42 23 Z" /></g></svg>` },
-        { id: 'custom_88', type: 'simple', name: '兩個八分音符', events: [0, 0.5], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(60, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><ellipse cx="65" cy="65" rx="14" ry="10" transform="rotate(-20 65 65)"/><rect x="75" y="10" width="3" height="55"/><rect x="25" y="10" width="53" height="8"/></g></svg>` },
-        { id: 'custom_8r', type: 'simple', name: '八分音符+休止', events: [0], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(40, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><path d="M 28 10 Q 45 20 35 45 Q 30 25 28 25 Z"/></g><g fill="currentColor" transform="translate(110, 35)"><circle cx="15" cy="15" r="6"/><path d="M 15 15 Q 35 -5 35 25 L 25 65 H 22 L 32 25 Q 32 5 15 20 Z"/></g></svg>` },
-        { id: 'custom_r8', type: 'simple', name: '八分休止+音符', events: [0.5], svg: `<svg viewBox="0 0 200 130"><g fill="currentColor" transform="translate(50, 35)"><circle cx="15" cy="15" r="6"/><path d="M 15 15 Q 35 -5 35 25 L 25 65 H 22 L 32 25 Q 32 5 15 20 Z"/></g><g fill="currentColor" transform="translate(100, 25)"><ellipse cx="15" cy="65" rx="14" ry="10" transform="rotate(-20 15 65)"/><rect x="25" y="10" width="3" height="55"/><path d="M 28 10 Q 45 20 35 45 Q 30 25 28 25 Z"/></g></svg>` }
-    ];
-
-    if (!window.ALL_PATTERNS) window.ALL_PATTERNS = [];
-    BASIC_PATTERNS.forEach(bp => { if (!window.ALL_PATTERNS.find(p => p.id === bp.id)) window.ALL_PATTERNS.unshift(bp); });
-
     let audioCtx, isPlaying = false, bpm = 100, kickVolume = 0.8, clapVolume = 0.8, shuffleProb = 0, kickEnabled = true;
     let timerID, nextBeatTime = 0, currentBeatIndex = 0, beatsPerBar = 4, currentMeterMode = 'simple', activePatternIDs = [], currentMeasure = [];
 
