@@ -84,6 +84,16 @@ document.addEventListener("DOMContentLoaded", () => {
         'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"]
     };
 
+    const DIATONIC_CHORDS = [
+        { name: 'Imaj7', interval: 0, type: 'maj7' },
+        { name: 'IIm7', interval: 2, type: 'min7' },
+        { name: 'IIIm7', interval: 4, type: 'min7' },
+        { name: 'IVmaj7', interval: 5, type: 'maj7' },
+        { name: 'V7', interval: 7, type: 'dom7' },
+        { name: 'VIm7', interval: 9, type: 'min7' },
+        { name: 'VIIm7b5', interval: 11, type: 'm7b5' }
+    ];
+
     let currentRoot = 0;
     let currentScaleType = 'maj7';
     let currentViewMode = 'intervals';
@@ -109,25 +119,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const chromaticSel = document.getElementById('chromaticFilterSelect');
 
     function getNoteValue(stringIdx, fret) { return (TUNING[stringIdx] + fret) % 12; }
-    function getNoteName(val, interval) {
-        if (interval && interval.includes('#')) return NOTES_SHARP[val];
-        if (interval && interval.includes('b')) return NOTES_FLAT[val];
-        return NOTES_FLAT[val];
+    
+    // 全新改良：根據 Master Key 與音程自動判斷使用升記號還是降記號
+    function getNoteName(val, interval, masterRootVal = 0) {
+        // D, E, G, A, B 偏向使用升記號 (#)
+        const PREFERS_SHARP = [2, 4, 7, 9, 11]; 
+        let useSharp = PREFERS_SHARP.includes(masterRootVal);
+
+        // 如果該音的音程名稱明確帶有 # 或 b，則強制覆蓋主調的預設值
+        // 例如：即使在 D大調中，出現 b3 音程時，依舊應該顯示降記號
+        if (interval) {
+            if (interval.includes('#')) useSharp = true;
+            if (interval.includes('b')) useSharp = false;
+        }
+        
+        return useSharp ? NOTES_SHARP[val] : NOTES_FLAT[val];
     }
     
-    function getIntervalLabel(noteVal) {
+    function getIntervalLabel(noteVal, customRoot = null, customType = null) {
         if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
             const CHROMATIC_INTERVALS = ['R', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'];
-            let rootOffset = (noteVal - parseInt(currentRoot) + 12) % 12;
+            let rootOffset = (noteVal - (customRoot !== null ? customRoot : parseInt(currentRoot)) + 12) % 12;
             return CHROMATIC_INTERVALS[rootOffset];
         }
 
-        let type = (exerciseMode === 'pair_drill' || exerciseMode === 'triplet_drill' || exerciseMode === 'quad_drill' || exerciseMode === 'quint_drill') ? 'major' : currentScaleType;
-        const scaleIntervals = SCALES[type];
+        let typeToUse = customType !== null ? customType : currentScaleType;
+        if (exerciseMode === 'pair_drill' || exerciseMode === 'triplet_drill' || exerciseMode === 'quad_drill' || exerciseMode === 'quint_drill' || (exerciseMode === 'diatonic' && customType === null)) {
+            typeToUse = 'major';
+        }
+        
+        let rootToUse = customRoot !== null ? customRoot : parseInt(currentRoot);
+        const scaleIntervals = SCALES[typeToUse];
         if (!scaleIntervals) return null;
-        const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
+        const scaleNotes = scaleIntervals.map(i => (rootToUse + i) % 12);
         const idx = scaleNotes.indexOf(noteVal);
-        if (idx !== -1) return INTERVAL_NAMES[type][idx];
+        if (idx !== -1) return INTERVAL_NAMES[typeToUse][idx];
         return null;
     }
 
@@ -199,15 +225,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getNotesForAnchor(anchorId, scaleNotes) {
-        if (exerciseMode === 'arpeggio') {
+        if (exerciseMode === 'arpeggio' || exerciseMode === 'diatonic') {
             let stringIdx = parseInt(arpStrSel.value);
             let chordType = chordSel.value;
-            let shapeOffsets = ARPEGGIO_SHAPES[chordType][anchorId];
+            let targetRoot = parseInt(currentRoot);
+            let shape = anchorId;
+
+            if (exerciseMode === 'diatonic') {
+                let dIndex = parseInt(anchorId.split('_')[1]);
+                let dc = DIATONIC_CHORDS[dIndex];
+                chordType = dc.type;
+                targetRoot = (parseInt(currentRoot) + dc.interval) % 12;
+                shape = '1st'; 
+            }
+
+            let shapeOffsets = ARPEGGIO_SHAPES[chordType][shape];
+            if (!shapeOffsets) shapeOffsets = ARPEGGIO_SHAPES[chordType]['1st']; 
             
             let anchorFret = -1;
             let minFretOffset = Math.min(...shapeOffsets.map(o => o[1]));
             for (let f = 1; f <= 20; f++) {
-                if (getNoteValue(stringIdx, f) === parseInt(currentRoot)) {
+                if (getNoteValue(stringIdx, f) === targetRoot) {
                     if (f + minFretOffset >= 0) { anchorFret = f; break; }
                 }
             }
@@ -218,7 +256,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     let s = stringIdx + offset[0];
                     let f = anchorFret + offset[1];
                     if (s >= 0 && s < STRINGS && f >= 0 && f <= FRETS) {
-                        activeNotes.push({ s: s, fret: f, val: getNoteValue(s, f), isRoot: offset[0] === 0 && offset[1] === 0 });
+                        activeNotes.push({ 
+                            s: s, fret: f, val: getNoteValue(s, f), 
+                            isRoot: offset[0] === 0 && offset[1] === 0,
+                            displayRoot: targetRoot,
+                            displayType: chordType
+                        });
                     }
                 });
             }
@@ -263,6 +306,9 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (exerciseMode === 'arpeggio') {
             chordSel.classList.remove('hidden'); arpStrSel.classList.remove('hidden');
             currentScaleType = chordSel.value;
+        } else if (exerciseMode === 'diatonic') {
+            arpStrSel.classList.remove('hidden'); 
+            currentScaleType = 'major'; 
         } else if (exerciseMode === 'parallel') {
             parallelSel.classList.remove('hidden');
             currentScaleType = 'major';
@@ -287,6 +333,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 { id: '2nd', label: 'Shape 2', subLabel: '2nd Finger' },
                 { id: '4th', label: 'Shape 3', subLabel: '4th Finger' }
             ];
+        } else if (exerciseMode === 'diatonic') {
+            generatedPositions = DIATONIC_CHORDS.map((dc, idx) => ({
+                id: `dia_${idx}`, label: dc.name, subLabel: dc.type
+            }));
         } else if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
             generatedPositions = [{ id: 'all', label: '全指板探索', modeName: '' }];
         } else {
@@ -410,7 +460,6 @@ document.addEventListener("DOMContentLoaded", () => {
             svg.appendChild(line);
         }
 
-        // 探索模式：直接繪製全指板
         if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
@@ -422,8 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 其他模式：依據演算法與選擇繪製
-        if (exerciseMode === 'scale' || exerciseMode === 'arpeggio') {
+        if (exerciseMode === 'scale' || exerciseMode === 'arpeggio' || exerciseMode === 'diatonic') {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
                     let val = getNoteValue(s, f);
@@ -447,7 +495,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        mergedActiveNotes.forEach(n => { if (n.fret <= FRETS) drawNoteCircle(svg, n.s, n.fret, n.val, true); });
+        mergedActiveNotes.forEach(n => { 
+            if (n.fret <= FRETS) {
+                drawNoteCircle(svg, n.s, n.fret, n.val, true, n.displayRoot, n.displayType); 
+            } 
+        });
         updateLegend();
     }
 
@@ -465,15 +517,16 @@ document.addEventListener("DOMContentLoaded", () => {
         svg.appendChild(c);
     }
 
-    function drawNoteCircle(svg, s, f, val, isActive) {
+    function drawNoteCircle(svg, s, f, val, isActive, customRoot = null, customType = null) {
         let cx = X_START + (f * FRET_WIDTH) - (FRET_WIDTH/2);
         if (f === 0) cx = X_START - 20;
 
         let cy = Y_START + (s * STRING_GAP);
         
-        let isRoot = (val === parseInt(currentRoot));
-        let intervalLabel = getIntervalLabel(val);
-        let rootOffset = (val - parseInt(currentRoot) + 12) % 12;
+        let effectiveRoot = customRoot !== null ? customRoot : parseInt(currentRoot);
+        let isRoot = (val === effectiveRoot);
+        let intervalLabel = getIntervalLabel(val, customRoot, customType);
+        let rootOffset = (val - effectiveRoot + 12) % 12;
 
         let color = "var(--note-active)";
         let strokeColor = "var(--bg-app)";
@@ -558,7 +611,8 @@ document.addEventListener("DOMContentLoaded", () => {
             txt.setAttribute("fill", textFill);
             
             let labelText = "";
-            if (currentViewMode === 'notes') labelText = getNoteName(val, intervalLabel);
+            let masterKey = parseInt(currentRoot);
+            if (currentViewMode === 'notes') labelText = getNoteName(val, intervalLabel, masterKey);
             else if (currentViewMode === 'solfege') labelText = getSolfegeLabel(val);
             else labelText = CN_INTERVAL_MAP[intervalLabel] || intervalLabel || "?";
             
@@ -643,7 +697,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener('touchmove', function(e) { if (e.touches.length > 1 && !e.target.closest('#zoomContainer')) e.preventDefault(); }, { passive: false });
 
-    // Event Listeners for Module 1
     exModeSel.addEventListener('change', syncFretboardState);
     [keySel, scaleSel, chordSel, arpStrSel, strPairSel, strTriSel, strQuadSel, strQuinSel, parallelSel, chromaticSel].forEach(el => {
         if(el) el.addEventListener('change', syncFretboardState);
@@ -699,8 +752,15 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('lblBox3')
     ];
 
-    function initTrainer() {
+    // 新增：動態設定 toggle 狀態 (配合調性)
+    function autoSetAccidental(rootVal) {
+        const PREFERS_SHARP = [2, 4, 7, 9, 11]; // 偏向使用升記號的調性根音
+        elAccToggle.checked = PREFERS_SHARP.includes(rootVal); // UI 上切換 toggle
         renderTrainerKeyboard();
+    }
+
+    function initTrainer() {
+        autoSetAccidental(tRoot);
         resetTrainerRound();
     }
 
@@ -803,12 +863,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const seq = elSeqSel.value;
         if (seq === 'chromatic') {
             tRoot = (tRoot + 1) % 12;
+            autoSetAccidental(tRoot);
         } else if (seq === 'circle5ths') {
             tRoot = (tRoot + 7) % 12; 
+            autoSetAccidental(tRoot);
+        } else if (seq === 'diatonic') {
+            if (typeof window.diatonicIdx === 'undefined') window.diatonicIdx = 0;
+            window.diatonicIdx = (window.diatonicIdx + 1) % 7;
+            let dc = DIATONIC_CHORDS[window.diatonicIdx];
+            let masterKey = parseInt(document.getElementById('keySelect').value);
+            tRoot = (masterKey + dc.interval) % 12;
+            tChord = dc.type;
+            document.getElementById('trainerChordType').value = tChord;
+            autoSetAccidental(masterKey);
         } else {
             let next = tRoot;
             while(next === tRoot) next = Math.floor(Math.random() * 12);
             tRoot = next;
+            autoSetAccidental(tRoot);
         }
     }
 
@@ -822,13 +894,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     elTypeSel.addEventListener('change', e => { tChord = e.target.value; resetTrainerRound(); });
+    
+    // 如果使用者手動開關，依然允許覆蓋預設，只觸發畫面更新
     elAccToggle.addEventListener('change', () => { renderTrainerKeyboard(); resetTrainerRound(); });
     
+    // 順階模式切換監聽
+    elSeqSel.addEventListener('change', e => { 
+        if (e.target.value === 'diatonic') {
+            window.diatonicIdx = 0;
+            let dc = DIATONIC_CHORDS[0];
+            let masterKey = parseInt(document.getElementById('keySelect').value);
+            tRoot = (masterKey + dc.interval) % 12;
+            tChord = dc.type;
+            document.getElementById('trainerChordType').value = tChord;
+            autoSetAccidental(masterKey);
+        } else {
+            autoSetAccidental(tRoot);
+        }
+        resetTrainerRound(); 
+    });
+
     document.getElementById('btnPrevRoot').addEventListener('click', () => {
-        tRoot = (tRoot - 1 + 12) % 12; resetTrainerRound();
+        tRoot = (tRoot - 1 + 12) % 12; 
+        autoSetAccidental(tRoot);
+        resetTrainerRound();
     });
     document.getElementById('btnNextRoot').addEventListener('click', () => {
-        tRoot = (tRoot + 1) % 12; resetTrainerRound();
+        tRoot = (tRoot + 1) % 12; 
+        autoSetAccidental(tRoot);
+        resetTrainerRound();
     });
 
     boxes.forEach(box => {
