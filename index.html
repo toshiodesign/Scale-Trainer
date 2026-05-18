@@ -22,7 +22,6 @@
             --note-extension: #9B59B6; 
             --note-ghost: #2C2C2C;  
             
-            /* 新增：平行調與經過音專用顏色 */
             --note-common: #3498DB; 
             --note-major: #F1C40F; 
             --note-minor: #9B59B6; 
@@ -128,7 +127,7 @@
         ========================================= */
         .switches-area { display: flex; gap: 10px; align-items: center; }
         .controls-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; margin-top: 12px; }
-        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect, #chordTypeSelect, #arpeggioStringSelect, #parallelModeSelect, #chromaticFilterSelect { border-color: var(--note-active); font-weight: bold; }
+        #exerciseModeSelect, #stringPairSelect, #stringTripletSelect, #stringQuadSelect, #stringQuintSelect, #chordTypeSelect, #arpeggioStringSelect, #parallelModeSelect, #chromaticFilterSelect, #arpeggioInversionSelect { border-color: var(--note-active); font-weight: bold; }
 
         .pos-buttons-container {
             display: flex; gap: 8px; overflow-x: auto; padding: 12px 20px;
@@ -161,11 +160,11 @@
            MODULE 2: CHORD TONE TRAINER
         ========================================= */
         .trainer-stage { padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 25px; background: var(--bg-body); }
-        .chord-display { display: flex; align-items: center; gap: 15px; }
-        .chord-nav-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .chord-display { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;}
+        .chord-nav-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-main); width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.2s; flex-shrink: 0;}
         .chord-nav-btn:hover { background: var(--note-active); border-color: var(--note-active); }
-        .current-chord-text { font-size: 2.5rem; font-weight: bold; color: var(--note-active); min-width: 120px; text-align: center; margin: 0; }
-        .chord-type-selector { font-size: 1.2rem; padding: 5px 10px; font-weight: bold; color: var(--text-main); background: var(--bg-app); border: 2px solid var(--btn-border); border-radius: 8px; text-align: center; }
+        .current-chord-text { font-size: 2.5rem; font-weight: bold; color: var(--note-active); min-width: 90px; text-align: center; margin: 0; }
+        .chord-type-selector { font-size: 1.1rem; padding: 5px 10px; font-weight: bold; color: var(--text-main); background: var(--bg-app); border: 2px solid var(--btn-border); border-radius: 8px; text-align: center; }
 
         .tone-boxes-container { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 500px; }
         .tone-box-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; min-width: 70px; }
@@ -319,6 +318,13 @@
                         <option value="2">起始弦: A String</option>
                         <option value="1">起始弦: D String</option>
                     </select>
+                    
+                    <select id="arpeggioInversionSelect" class="hidden">
+                        <option value="0">Root Position</option>
+                        <option value="1">1st Inversion</option>
+                        <option value="2">2nd Inversion</option>
+                        <option value="3">3rd Inversion</option>
+                    </select>
 
                     <select id="stringPairSelect" class="hidden">
                         <option value="0,1">D & G (High)</option>
@@ -398,12 +404,20 @@
                         <option value="aug7">Dom7#5</option>
                         <option value="dim7">dim7</option>
                     </select>
+                    
+                    <select class="chord-type-selector" id="trainerInversion">
+                        <option value="0">Root Pos</option>
+                        <option value="1">1st Inv</option>
+                        <option value="2">2nd Inv</option>
+                        <option value="3">3rd Inv</option>
+                    </select>
+                    
                     <button class="chord-nav-btn" id="btnNextRoot">&gt;</button>
                 </div>
 
                 <div class="tone-boxes-container">
                     <div class="tone-box-wrapper">
-                        <span class="tone-box-label">Root (I)</span>
+                        <span class="tone-box-label" id="lblBox0">Root</span>
                         <div class="tone-box root-box" id="box0">C</div>
                     </div>
                     <div class="tone-box-wrapper">

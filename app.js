@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
         'mM7':      ['R', 'b3', '5', '7']
     };
     
+    // 硬編碼的原位指型 (僅適用於 Root Position)
     const ARPEGGIO_SHAPES = {
         'maj': { '1st': [[0,0], [0,4], [-1,2], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,2], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-3], [-3,-3]] },
         'min': { '1st': [[0,0], [-1,-2], [-1,2], [-2,2]], '2nd': [[0,0], [0,3], [-1,2], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-3], [-3,-3]] },
@@ -109,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const scaleSel = document.getElementById('scaleSelect');
     const chordSel = document.getElementById('chordTypeSelect');
     const arpStrSel = document.getElementById('arpeggioStringSelect');
+    const arpInvSel = document.getElementById('arpeggioInversionSelect'); // 新增轉位選擇器
     const strPairSel = document.getElementById('stringPairSelect');
     const strTriSel = document.getElementById('stringTripletSelect');
     const strQuadSel = document.getElementById('stringQuadSelect');
@@ -120,19 +122,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getNoteValue(stringIdx, fret) { return (TUNING[stringIdx] + fret) % 12; }
     
-    // 全新改良：根據 Master Key 與音程自動判斷使用升記號還是降記號
     function getNoteName(val, interval, masterRootVal = 0) {
-        // D, E, G, A, B 偏向使用升記號 (#)
         const PREFERS_SHARP = [2, 4, 7, 9, 11]; 
         let useSharp = PREFERS_SHARP.includes(masterRootVal);
-
-        // 如果該音的音程名稱明確帶有 # 或 b，則強制覆蓋主調的預設值
-        // 例如：即使在 D大調中，出現 b3 音程時，依舊應該顯示降記號
         if (interval) {
             if (interval.includes('#')) useSharp = true;
             if (interval.includes('b')) useSharp = false;
         }
-        
         return useSharp ? NOTES_SHARP[val] : NOTES_FLAT[val];
     }
     
@@ -224,12 +220,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return positions;
     }
 
+    // 核心修改：加入動態指型運算，以支援轉位
     function getNotesForAnchor(anchorId, scaleNotes) {
         if (exerciseMode === 'arpeggio' || exerciseMode === 'diatonic') {
             let stringIdx = parseInt(arpStrSel.value);
             let chordType = chordSel.value;
             let targetRoot = parseInt(currentRoot);
             let shape = anchorId;
+            let inv = (exerciseMode === 'arpeggio') ? (parseInt(arpInvSel.value) || 0) : 0;
 
             if (exerciseMode === 'diatonic') {
                 let dIndex = parseInt(anchorId.split('_')[1]);
@@ -237,35 +235,92 @@ document.addEventListener("DOMContentLoaded", () => {
                 chordType = dc.type;
                 targetRoot = (parseInt(currentRoot) + dc.interval) % 12;
                 shape = '1st'; 
+                inv = 0;
             }
 
-            let shapeOffsets = ARPEGGIO_SHAPES[chordType][shape];
-            if (!shapeOffsets) shapeOffsets = ARPEGGIO_SHAPES[chordType]['1st']; 
-            
-            let anchorFret = -1;
-            let minFretOffset = Math.min(...shapeOffsets.map(o => o[1]));
-            for (let f = 1; f <= 20; f++) {
-                if (getNoteValue(stringIdx, f) === targetRoot) {
-                    if (f + minFretOffset >= 0) { anchorFret = f; break; }
+            let intervals = SCALES[chordType] || SCALES['major'];
+            let activeNotes = [];
+
+            // Root Position 保留原本最穩定的人體工學硬編碼指型
+            if (inv === 0) {
+                let shapeOffsets = ARPEGGIO_SHAPES[chordType][shape];
+                if (!shapeOffsets) shapeOffsets = ARPEGGIO_SHAPES[chordType]['1st']; 
+                
+                let anchorFret = -1;
+                let minFretOffset = Math.min(...shapeOffsets.map(o => o[1]));
+                for (let f = 1; f <= 20; f++) {
+                    if (getNoteValue(stringIdx, f) === targetRoot) {
+                        if (f + minFretOffset >= 0) { anchorFret = f; break; }
+                    }
+                }
+
+                if (anchorFret !== -1) {
+                    shapeOffsets.forEach(offset => {
+                        let s = stringIdx + offset[0];
+                        let f = anchorFret + offset[1];
+                        if (s >= 0 && s < STRINGS && f >= 0 && f <= FRETS) {
+                            activeNotes.push({ 
+                                s: s, fret: f, val: getNoteValue(s, f), 
+                                isRoot: offset[0] === 0 && offset[1] === 0,
+                                displayRoot: targetRoot,
+                                displayType: chordType
+                            });
+                        }
+                    });
+                }
+            } 
+            // 轉位 (Inversion) 時，自動計算最佳的把位區間 (Fret Box) 並抓取音符
+            else {
+                let bassInterval = intervals[inv % intervals.length];
+                let bassNoteVal = (targetRoot + bassInterval) % 12;
+                let chordNotes = intervals.map(i => (targetRoot + i) % 12);
+
+                let anchorFret = -1;
+                for (let f = 1; f <= 20; f++) {
+                    if (getNoteValue(stringIdx, f) === bassNoteVal) {
+                        anchorFret = f; break;
+                    }
+                }
+
+                if (anchorFret !== -1) {
+                    let minFret, maxFret;
+                    // 根據指法決定抓取區間
+                    if (shape === '1st') { minFret = anchorFret; maxFret = anchorFret + 4; }
+                    else if (shape === '2nd') { minFret = anchorFret - 2; maxFret = anchorFret + 2; }
+                    else if (shape === '4th') { minFret = anchorFret - 4; maxFret = anchorFret; }
+                    else { minFret = anchorFret - 1; maxFret = anchorFret + 3; }
+
+                    for(let s = stringIdx; s >= 0; s--) {
+                        for(let f = minFret; f <= maxFret; f++) {
+                            if (f >= 0 && f <= FRETS) {
+                                let val = getNoteValue(s, f);
+                                if (chordNotes.includes(val)) {
+                                    // 確保不會抓到比 Bass 根音還低的音
+                                    if (s === stringIdx && f < anchorFret) continue; 
+                                    activeNotes.push({
+                                        s: s, fret: f, val: val,
+                                        isRoot: (val === targetRoot), // 在視覺上依然將真正的 Root 標示出來
+                                        displayRoot: targetRoot,
+                                        displayType: chordType
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    // 將區間內的音符照音高排列
+                    activeNotes.sort((a,b) => {
+                        let pitchA = (4 - a.s) * 5 + a.fret;
+                        let pitchB = (4 - b.s) * 5 + b.fret;
+                        return pitchA - pitchB;
+                    });
+                    
+                    // 嚴格截取一個八度內的音符數量 (例如七和弦只取前4顆)
+                    activeNotes = activeNotes.slice(0, intervals.length);
                 }
             }
-
-            let activeNotes = [];
-            if (anchorFret !== -1) {
-                shapeOffsets.forEach(offset => {
-                    let s = stringIdx + offset[0];
-                    let f = anchorFret + offset[1];
-                    if (s >= 0 && s < STRINGS && f >= 0 && f <= FRETS) {
-                        activeNotes.push({ 
-                            s: s, fret: f, val: getNoteValue(s, f), 
-                            isRoot: offset[0] === 0 && offset[1] === 0,
-                            displayRoot: targetRoot,
-                            displayType: chordType
-                        });
-                    }
-                });
-            }
             return activeNotes;
+            
         } else if (exerciseMode !== 'scale' && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
             let pos = generatedPositions.find(p => p.id === anchorId);
             if (!pos) return [];
@@ -298,13 +353,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function syncFretboardState() {
         exerciseMode = exModeSel.value;
-        const selectors = [scaleSel, strPairSel, strTriSel, strQuadSel, strQuinSel, chordSel, arpStrSel, parallelSel, chromaticSel];
+        const selectors = [scaleSel, strPairSel, strTriSel, strQuadSel, strQuinSel, chordSel, arpStrSel, arpInvSel, parallelSel, chromaticSel];
         selectors.forEach(el => { if(el) el.classList.add('hidden'); });
 
         if (exerciseMode === 'scale') {
             scaleSel.classList.remove('hidden'); currentScaleType = scaleSel.value;
         } else if (exerciseMode === 'arpeggio') {
-            chordSel.classList.remove('hidden'); arpStrSel.classList.remove('hidden');
+            chordSel.classList.remove('hidden'); 
+            arpStrSel.classList.remove('hidden');
+            arpInvSel.classList.remove('hidden'); // 顯示轉位選單
             currentScaleType = chordSel.value;
         } else if (exerciseMode === 'diatonic') {
             arpStrSel.classList.remove('hidden'); 
@@ -698,7 +755,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('touchmove', function(e) { if (e.touches.length > 1 && !e.target.closest('#zoomContainer')) e.preventDefault(); }, { passive: false });
 
     exModeSel.addEventListener('change', syncFretboardState);
-    [keySel, scaleSel, chordSel, arpStrSel, strPairSel, strTriSel, strQuadSel, strQuinSel, parallelSel, chromaticSel].forEach(el => {
+    // 綁定新的選單事件
+    [keySel, scaleSel, chordSel, arpStrSel, arpInvSel, strPairSel, strTriSel, strQuadSel, strQuinSel, parallelSel, chromaticSel].forEach(el => {
         if(el) el.addEventListener('change', syncFretboardState);
     });
     viewModeSel.addEventListener('change', renderFretboard);
@@ -732,11 +790,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let tRoot = 0; 
     let tChord = 'maj7';
+    let tInversion = 0; 
     let tAnswers = [null, null, null]; 
     let activeBoxIdx = null;
 
     const elDisplayRoot = document.getElementById('displayRootName');
     const elTypeSel = document.getElementById('trainerChordType');
+    const elInvSel = document.getElementById('trainerInversion'); 
     const elSeqSel = document.getElementById('trainerSeqMode');
     const elAccToggle = document.getElementById('trainerAccidentalToggle');
     const elTipsToggle = document.getElementById('trainerTipsToggle');
@@ -751,11 +811,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('lblBox2'),
         document.getElementById('lblBox3')
     ];
+    const elLblBox0 = document.getElementById('lblBox0');
 
-    // 新增：動態設定 toggle 狀態 (配合調性)
     function autoSetAccidental(rootVal) {
-        const PREFERS_SHARP = [2, 4, 7, 9, 11]; // 偏向使用升記號的調性根音
-        elAccToggle.checked = PREFERS_SHARP.includes(rootVal); // UI 上切換 toggle
+        const PREFERS_SHARP = [2, 4, 7, 9, 11]; 
+        elAccToggle.checked = PREFERS_SHARP.includes(rootVal); 
         renderTrainerKeyboard();
     }
 
@@ -781,18 +841,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function resetTrainerRound() {
-        const isFlat = !elAccToggle.checked;
+        const isFlat = !elAccToggle.checked; 
         elDisplayRoot.innerText = isFlat ? NOTES_FLAT[tRoot] : NOTES_SHARP[tRoot];
-        document.getElementById('box0').innerText = elDisplayRoot.innerText;
         
         tAnswers = [null, null, null];
         const chordDef = TRAINER_CHORDS[tChord];
+        
+        const fullIntervals = [0, ...chordDef.intervals];
+        const fullLabels = ['R', ...chordDef.labels];
+
+        const rotIntervals = [...fullIntervals.slice(tInversion), ...fullIntervals.slice(0, tInversion)];
+        const rotLabels = [...fullLabels.slice(tInversion), ...fullLabels.slice(0, tInversion)];
+
+        const bassVal = (tRoot + rotIntervals[0]) % 12;
+        document.getElementById('box0').innerText = isFlat ? NOTES_FLAT[bassVal] : NOTES_SHARP[bassVal];
+        elLblBox0.innerText = rotLabels[0];
 
         boxes.forEach((box, i) => {
             box.querySelector('.val').innerText = '?';
             box.querySelector('.hint-text').innerText = '';
             box.className = 'tone-box input-box';
-            boxLabels[i].innerText = chordDef.labels[i];
+            
+            boxLabels[i].innerText = rotLabels[i + 1]; 
+            box.dataset.expectedInterval = rotIntervals[i + 1]; 
         });
         
         setActiveBox(1);
@@ -825,12 +896,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function validateTrainer() {
-        const chordDef = TRAINER_CHORDS[tChord];
         let allCorrect = true;
         let tipsOn = elTipsToggle.checked;
 
         boxes.forEach((box, i) => {
-            const expectedVal = (tRoot + chordDef.intervals[i]) % 12;
+            const expectedInterval = parseInt(box.dataset.expectedInterval);
+            const expectedVal = (tRoot + expectedInterval) % 12;
             const userVal = tAnswers[i];
             
             box.classList.remove('active', 'error', 'success', 'show-hint');
@@ -842,7 +913,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 allCorrect = false;
                 box.classList.add('error');
                 if (tipsOn) {
-                    box.querySelector('.hint-text').innerText = getExpectedNoteName(tRoot, chordDef.intervals[i]);
+                    box.querySelector('.hint-text').innerText = getExpectedNoteName(tRoot, expectedInterval);
                     box.classList.add('show-hint');
                 }
             } else {
@@ -888,17 +959,19 @@ document.addEventListener("DOMContentLoaded", () => {
         exModeSel.value = 'arpeggio';
         keySel.value = rootVal;
         chordSel.value = chordType;
+        
+        // 將第二模組的轉位狀態也對應到第一模組
+        arpInvSel.value = tInversion; 
+        
         viewModeSel.value = 'intervals'; 
         syncFretboardState();
         document.querySelector('.app-container').scrollIntoView({ behavior: 'smooth' });
     }
 
     elTypeSel.addEventListener('change', e => { tChord = e.target.value; resetTrainerRound(); });
-    
-    // 如果使用者手動開關，依然允許覆蓋預設，只觸發畫面更新
+    elInvSel.addEventListener('change', e => { tInversion = parseInt(e.target.value); resetTrainerRound(); });
     elAccToggle.addEventListener('change', () => { renderTrainerKeyboard(); resetTrainerRound(); });
     
-    // 順階模式切換監聽
     elSeqSel.addEventListener('change', e => { 
         if (e.target.value === 'diatonic') {
             window.diatonicIdx = 0;
