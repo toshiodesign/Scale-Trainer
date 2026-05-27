@@ -20,6 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const SCALES = {
         'major':    [0, 2, 4, 5, 7, 9, 11],
         'minor':    [0, 2, 3, 5, 7, 8, 10],
+        'ionian':     [0, 2, 4, 5, 7, 9, 11],
+        'dorian':     [0, 2, 3, 5, 7, 9, 10],
+        'phrygian':   [0, 1, 3, 5, 7, 8, 10],
+        'lydian':     [0, 2, 4, 6, 7, 9, 11],
+        'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+        'aeolian':    [0, 2, 3, 5, 7, 8, 10],
+        'locrian':    [0, 1, 3, 5, 6, 8, 10],
         'maj_pent': [0, 2, 4, 7, 9],
         'min_pent': [0, 3, 5, 7, 10],
         'maj':      [0, 4, 7],
@@ -38,6 +45,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const INTERVAL_NAMES = {
         'major':    ['R', '2', '3', '4', '5', '6', '7'],
         'minor':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
+        'ionian':     ['R', '2', '3', '4', '5', '6', '7'],
+        'dorian':     ['R', '2', 'b3', '4', '5', '6', 'b7'],
+        'phrygian':   ['R', 'b2', 'b3', '4', '5', 'b6', 'b7'],
+        'lydian':     ['R', '2', '3', '#4', '5', '6', '7'],
+        'mixolydian': ['R', '2', '3', '4', '5', '6', 'b7'],
+        'aeolian':    ['R', '2', 'b3', '4', '5', 'b6', 'b7'],
+        'locrian':    ['R', 'b2', 'b3', '4', 'b5', 'b6', 'b7'],
         'maj_pent': ['R', '2', '3', '5', '6'],
         'min_pent': ['R', 'b3', '4', '5', 'b7'],
         'maj':      ['R', '3', '5'],
@@ -53,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
         'mM7':      ['R', 'b3', '5', '7']
     };
     
-    // 硬編碼的原位指型 (僅適用於 Root Position)
     const ARPEGGIO_SHAPES = {
         'maj': { '1st': [[0,0], [0,4], [-1,2], [-2,2]], '2nd': [[0,0], [-1,-1], [-1,2], [-2,2]], '4th': [[0,0], [-1,-1], [-2,-3], [-3,-3]] },
         'min': { '1st': [[0,0], [-1,-2], [-1,2], [-2,2]], '2nd': [[0,0], [0,3], [-1,2], [-2,2]], '4th': [[0,0], [-1,-2], [-2,-3], [-3,-3]] },
@@ -80,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const SCALE_MODE_NAMES = {
         'major': ["Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Aeolian", "Locrian"],
-        'minor': ["Aeolian", "Locrian", "Ionian", "Dorian", "Phrygian", "Lydian", "Mixo"],
+        'minor': ["Aeolian", "Locrian", "Ionian", "Dorian", "Phrygian", "Lydian", "Mixolydian"],
         'maj_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"],
         'min_pent': ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5"]
     };
@@ -93,6 +106,16 @@ document.addEventListener("DOMContentLoaded", () => {
         { name: 'V7', interval: 7, type: 'dom7' },
         { name: 'VIm7', interval: 9, type: 'min7' },
         { name: 'VIIm7b5', interval: 11, type: 'm7b5' }
+    ];
+    
+    const MINOR_DIATONIC_CHORDS = [
+        { name: 'Im7', interval: 0, type: 'min7' },
+        { name: 'IIm7b5', interval: 2, type: 'm7b5' },
+        { name: 'bIIImaj7', interval: 3, type: 'maj7' },
+        { name: 'IVm7', interval: 5, type: 'min7' },
+        { name: 'Vm7', interval: 7, type: 'min7' },
+        { name: 'bVImaj7', interval: 8, type: 'maj7' },
+        { name: 'bVII7', interval: 10, type: 'dom7' }
     ];
 
     let currentRoot = 0;
@@ -110,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const scaleSel = document.getElementById('scaleSelect');
     const chordSel = document.getElementById('chordTypeSelect');
     const arpStrSel = document.getElementById('arpeggioStringSelect');
-    const arpInvSel = document.getElementById('arpeggioInversionSelect'); // 新增轉位選擇器
+    const arpInvSel = document.getElementById('arpeggioInversionSelect');
     const strPairSel = document.getElementById('stringPairSelect');
     const strTriSel = document.getElementById('stringTripletSelect');
     const strQuadSel = document.getElementById('stringQuadSelect');
@@ -140,8 +163,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         let typeToUse = customType !== null ? customType : currentScaleType;
-        if (exerciseMode === 'pair_drill' || exerciseMode === 'triplet_drill' || exerciseMode === 'quad_drill' || exerciseMode === 'quint_drill' || (exerciseMode === 'diatonic' && customType === null)) {
-            typeToUse = 'major';
+        if (exerciseMode === 'pair_drill' || exerciseMode === 'triplet_drill' || exerciseMode === 'quad_drill' || exerciseMode === 'quint_drill' || ((exerciseMode === 'diatonic' || exerciseMode === 'diatonic_minor') && customType === null)) {
+            typeToUse = exerciseMode === 'diatonic_minor' ? 'minor' : 'major';
         }
         
         let rootToUse = customRoot !== null ? customRoot : parseInt(currentRoot);
@@ -220,18 +243,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return positions;
     }
 
-    // 核心修改：加入動態指型運算，以支援轉位
     function getNotesForAnchor(anchorId, scaleNotes) {
-        if (exerciseMode === 'arpeggio' || exerciseMode === 'diatonic') {
+        if (exerciseMode === 'arpeggio' || exerciseMode === 'diatonic' || exerciseMode === 'diatonic_minor') {
             let stringIdx = parseInt(arpStrSel.value);
             let chordType = chordSel.value;
             let targetRoot = parseInt(currentRoot);
             let shape = anchorId;
             let inv = (exerciseMode === 'arpeggio') ? (parseInt(arpInvSel.value) || 0) : 0;
 
-            if (exerciseMode === 'diatonic') {
+            if (exerciseMode === 'diatonic' || exerciseMode === 'diatonic_minor') {
                 let dIndex = parseInt(anchorId.split('_')[1]);
-                let dc = DIATONIC_CHORDS[dIndex];
+                let dc = (exerciseMode === 'diatonic') ? DIATONIC_CHORDS[dIndex] : MINOR_DIATONIC_CHORDS[dIndex];
                 chordType = dc.type;
                 targetRoot = (parseInt(currentRoot) + dc.interval) % 12;
                 shape = '1st'; 
@@ -241,7 +263,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let intervals = SCALES[chordType] || SCALES['major'];
             let activeNotes = [];
 
-            // Root Position 保留原本最穩定的人體工學硬編碼指型
             if (inv === 0) {
                 let shapeOffsets = ARPEGGIO_SHAPES[chordType][shape];
                 if (!shapeOffsets) shapeOffsets = ARPEGGIO_SHAPES[chordType]['1st']; 
@@ -269,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                 }
             } 
-            // 轉位 (Inversion) 時，自動計算最佳的把位區間 (Fret Box) 並抓取音符
             else {
                 let bassInterval = intervals[inv % intervals.length];
                 let bassNoteVal = (targetRoot + bassInterval) % 12;
@@ -284,7 +304,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (anchorFret !== -1) {
                     let minFret, maxFret;
-                    // 根據指法決定抓取區間
                     if (shape === '1st') { minFret = anchorFret; maxFret = anchorFret + 4; }
                     else if (shape === '2nd') { minFret = anchorFret - 2; maxFret = anchorFret + 2; }
                     else if (shape === '4th') { minFret = anchorFret - 4; maxFret = anchorFret; }
@@ -295,11 +314,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (f >= 0 && f <= FRETS) {
                                 let val = getNoteValue(s, f);
                                 if (chordNotes.includes(val)) {
-                                    // 確保不會抓到比 Bass 根音還低的音
                                     if (s === stringIdx && f < anchorFret) continue; 
                                     activeNotes.push({
                                         s: s, fret: f, val: val,
-                                        isRoot: (val === targetRoot), // 在視覺上依然將真正的 Root 標示出來
+                                        isRoot: (val === targetRoot),
                                         displayRoot: targetRoot,
                                         displayType: chordType
                                     });
@@ -308,20 +326,18 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     }
 
-                    // 將區間內的音符照音高排列
                     activeNotes.sort((a,b) => {
                         let pitchA = (4 - a.s) * 5 + a.fret;
                         let pitchB = (4 - b.s) * 5 + b.fret;
                         return pitchA - pitchB;
                     });
                     
-                    // 嚴格截取一個八度內的音符數量 (例如七和弦只取前4顆)
                     activeNotes = activeNotes.slice(0, intervals.length);
                 }
             }
             return activeNotes;
             
-        } else if (exerciseMode !== 'scale' && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
+        } else if (!['scale', 'parallel', 'chromatic', 'modes', 'modes_minor'].includes(exerciseMode)) {
             let pos = generatedPositions.find(p => p.id === anchorId);
             if (!pos) return [];
             return pos.notes.map(n => ({ s: n.s, fret: n.fret, val: n.val, isRoot: n.val === parseInt(currentRoot) }));
@@ -361,11 +377,13 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (exerciseMode === 'arpeggio') {
             chordSel.classList.remove('hidden'); 
             arpStrSel.classList.remove('hidden');
-            arpInvSel.classList.remove('hidden'); // 顯示轉位選單
+            arpInvSel.classList.remove('hidden');
             currentScaleType = chordSel.value;
-        } else if (exerciseMode === 'diatonic') {
+        } else if (exerciseMode === 'diatonic' || exerciseMode === 'diatonic_minor') {
             arpStrSel.classList.remove('hidden'); 
-            currentScaleType = 'major'; 
+            currentScaleType = (exerciseMode === 'diatonic') ? 'major' : 'minor'; 
+        } else if (exerciseMode === 'modes' || exerciseMode === 'modes_minor') {
+            currentScaleType = (exerciseMode === 'modes') ? 'major' : 'minor'; 
         } else if (exerciseMode === 'parallel') {
             parallelSel.classList.remove('hidden');
             currentScaleType = 'major';
@@ -390,9 +408,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 { id: '2nd', label: 'Shape 2', subLabel: '2nd Finger' },
                 { id: '4th', label: 'Shape 3', subLabel: '4th Finger' }
             ];
-        } else if (exerciseMode === 'diatonic') {
-            generatedPositions = DIATONIC_CHORDS.map((dc, idx) => ({
+        } else if (exerciseMode === 'diatonic' || exerciseMode === 'diatonic_minor') {
+            let chordList = (exerciseMode === 'diatonic') ? DIATONIC_CHORDS : MINOR_DIATONIC_CHORDS;
+            generatedPositions = chordList.map((dc, idx) => ({
                 id: `dia_${idx}`, label: dc.name, subLabel: dc.type
+            }));
+        } else if (exerciseMode === 'modes' || exerciseMode === 'modes_minor') {
+            let isMajor = (exerciseMode === 'modes');
+            let chordList = isMajor ? DIATONIC_CHORDS : MINOR_DIATONIC_CHORDS;
+            let modeNames = SCALE_MODE_NAMES[isMajor ? 'major' : 'minor'];
+            generatedPositions = chordList.map((dc, idx) => ({
+                id: `mode_${idx}`, label: modeNames[idx], subLabel: `${dc.name} (${dc.type})`
             }));
         } else if (exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
             generatedPositions = [{ id: 'all', label: '全指板探索', modeName: '' }];
@@ -402,7 +428,8 @@ document.addEventListener("DOMContentLoaded", () => {
             generatedPositions = generateSequenceDrillPositions();
         }
         
-        if (!isFretboardMultiMode || activeAnchors.size === 0 || exerciseMode === 'parallel' || exerciseMode === 'chromatic') {
+        const ignoreSingleMode = ['parallel', 'chromatic', 'modes', 'modes_minor'];
+        if (!isFretboardMultiMode || activeAnchors.size === 0 || ignoreSingleMode.includes(exerciseMode)) {
             activeAnchors.clear();
             if(generatedPositions.length > 0) activeAnchors.add(generatedPositions[0].id);
         }
@@ -412,6 +439,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderFretboard() {
         currentViewMode = viewModeSel.value;
         let scaleIntervals = (exerciseMode === 'scale' || exerciseMode === 'arpeggio') ? SCALES[currentScaleType] : SCALES['major'];
+        if (exerciseMode === 'diatonic_minor' || exerciseMode === 'modes_minor') scaleIntervals = SCALES['minor'];
+        
         const scaleNotes = scaleIntervals.map(i => (parseInt(currentRoot) + i) % 12);
 
         const btnContainer = document.getElementById('posBtnContainer');
@@ -424,7 +453,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let label = (exerciseMode === 'scale') ? ((pos.id === 0) ? "Open" : `Pos ${idx + 1}`) : pos.label;
             btn.innerHTML = `${label}<span class="mode-name">${pos.modeName || pos.subLabel}</span>`;
             btn.onclick = () => {
-                if (isFretboardMultiMode && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
+                const ignoreSingleMode = ['parallel', 'chromatic', 'modes', 'modes_minor'];
+                if (isFretboardMultiMode && !ignoreSingleMode.includes(exerciseMode)) {
                     if (activeAnchors.has(pos.id)) activeAnchors.delete(pos.id);
                     else activeAnchors.add(pos.id);
                 } else {
@@ -471,6 +501,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="legend-item"><span class="dot" style="background:var(--note-passing-bg); border:1px solid var(--note-passing-border)"></span>經過音 (Passing Tones)</div>
                 `;
             }
+        } else if (exerciseMode === 'modes' || exerciseMode === 'modes_minor') {
+            legend.innerHTML = `
+                <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>調式根音 (Mode Root)</div>
+                <div class="legend-item"><span class="dot" style="background:var(--note-active)"></span>調式和弦音 (1, 3, 5, 7)</div>
+                <div class="legend-item"><span class="dot" style="background:var(--note-ghost)"></span>調式延伸音 (2, 4, 6)</div>
+            `;
         } else {
             legend.innerHTML = `
                 <div class="legend-item"><span class="dot" style="background:var(--note-root)"></span>根音</div>
@@ -528,7 +564,31 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (exerciseMode === 'scale' || exerciseMode === 'arpeggio' || exerciseMode === 'diatonic') {
+        if (exerciseMode === 'modes' || exerciseMode === 'modes_minor') {
+            let isMajor = (exerciseMode === 'modes');
+            let activeModeId = activeAnchors.values().next().value || 'mode_0';
+            let dIndex = parseInt(activeModeId.split('_')[1]);
+            let dc = isMajor ? DIATONIC_CHORDS[dIndex] : MINOR_DIATONIC_CHORDS[dIndex];
+            let modeRoot = (parseInt(currentRoot) + dc.interval) % 12;
+            
+            let modeScaleTypes = isMajor 
+                ? ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']
+                : ['aeolian', 'locrian', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian'];
+            let currentModeScaleType = modeScaleTypes[dIndex];
+
+            for (let s = 0; s < STRINGS; s++) {
+                for (let f = 0; f <= FRETS; f++) {
+                    let val = getNoteValue(s, f);
+                    if (scaleNotes.includes(val)) {
+                        drawNoteCircle(svg, s, f, val, true, modeRoot, currentModeScaleType);
+                    }
+                }
+            }
+            updateLegend();
+            return;
+        }
+
+        if (['scale', 'arpeggio', 'diatonic', 'diatonic_minor'].includes(exerciseMode)) {
             for (let s = 0; s < STRINGS; s++) {
                 for (let f = 0; f <= FRETS; f++) {
                     let val = getNoteValue(s, f);
@@ -637,6 +697,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 strokeColor = "var(--note-passing-border)";
                 strokeWidth = 2;
                 textFill = "var(--note-passing-text)";
+                radius = 12;
+            }
+        } else if (exerciseMode === 'modes' || exerciseMode === 'modes_minor') {
+            radius = 14; 
+            isActive = true;
+            let offset = (val - effectiveRoot + 12) % 12;
+            let modeIntervals = SCALES[customType];
+            let chordToneIndex = modeIntervals.indexOf(offset);
+            
+            let isChordTone = [0, 2, 4, 6].includes(chordToneIndex);
+            
+            if (isRoot) {
+                color = "var(--note-root)";
+            } else if (isChordTone) {
+                color = "var(--note-active)"; 
+            } else {
+                color = "var(--note-ghost)";  
+                strokeColor = "transparent";
+                isActive = false; 
+                textFill = "var(--note-text-ghost)";
                 radius = 12;
             }
         } else {
@@ -755,14 +835,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('touchmove', function(e) { if (e.touches.length > 1 && !e.target.closest('#zoomContainer')) e.preventDefault(); }, { passive: false });
 
     exModeSel.addEventListener('change', syncFretboardState);
-    // 綁定新的選單事件
+    
     [keySel, scaleSel, chordSel, arpStrSel, arpInvSel, strPairSel, strTriSel, strQuadSel, strQuinSel, parallelSel, chromaticSel].forEach(el => {
         if(el) el.addEventListener('change', syncFretboardState);
     });
     viewModeSel.addEventListener('change', renderFretboard);
     multiCheck.addEventListener('change', (e) => {
         isFretboardMultiMode = e.target.checked;
-        if (!isFretboardMultiMode && activeAnchors.size > 1 && exerciseMode !== 'parallel' && exerciseMode !== 'chromatic') {
+        const ignoreSingleMode = ['parallel', 'chromatic', 'modes', 'modes_minor'];
+        if (!isFretboardMultiMode && activeAnchors.size > 1 && !ignoreSingleMode.includes(exerciseMode)) {
             const first = activeAnchors.values().next().value; activeAnchors.clear(); activeAnchors.add(first);
         }
         renderFretboard();
@@ -960,7 +1041,6 @@ document.addEventListener("DOMContentLoaded", () => {
         keySel.value = rootVal;
         chordSel.value = chordType;
         
-        // 將第二模組的轉位狀態也對應到第一模組
         arpInvSel.value = tInversion; 
         
         viewModeSel.value = 'intervals'; 
